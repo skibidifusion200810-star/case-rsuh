@@ -64,6 +64,7 @@ function matchedPrice(prices:Record<string,number>,name:string,wears?:{name:stri
  return null;
 }
 async function main(){
+ const strict=process.env.REQUIRE_CSMONEY_QUOTES==='true';
  const [skins,crates,pricesFeed,csQuotes]=await Promise.all([
   json<FeedSkin[]>(BASE+'/skins.json'),
   json<FeedCrate[]>(BASE+'/crates.json'),
@@ -115,13 +116,19 @@ async function main(){
    const price=matchedPrice(prices,skin.name,skin.wears);
    const fullName=exactHash;
    // Never substitute an arbitrary case-price percentage or one cent for a missing quote.
-   const legacyValue=price?.marketHashName===exactHash?price.value:0;
+   const legacyValue=!strict&&price?.marketHashName===exactHash?price.value:0;
    const value=quote?.eurCents??legacyValue;
    const source=quote?'CSMONEY_TRADE':legacyValue?'BYMYKEL_USD_SNAPSHOT':'UNVERIFIED';
-   if(value<=1||(item.name==='AWP | Dragon Lore'&&!quote&&value<100000)){
+   if(value<=1||(strict&&!quote)||(item.name==='AWP | Dragon Lore'&&!quote&&value<100000)){
     console.warn('[PRICE UNVERIFIED] not eligible for drops:',exactHash);
     continue;
    }
+   // Restore image previews on legacy inventory entries without rewriting their saved values.
+   await db.item.updateMany({
+    where:{caseId:c.id,weight:0,
+      OR:[{name:label(item.name)+' (CR Edition)'},{name:label(item.name)+' (Virtual)'}]},
+    data:{imageUrl}
+   });
    const existing=await db.item.findFirst({where:{caseId:c.id,name:fullName}});
    if(existing){
     // Never rewrite item values held in inventories; purchase/award amounts stay fixed.
@@ -145,6 +152,6 @@ async function main(){
   if(imported===0)console.warn('No verified-price skins for '+def.slug+'; opening disabled until pricing is available');
   console.log('Seeded:',def.name,'with',imported,'image-backed items');
  }
- console.log('CS2 price/image audit:',{verified,missing,csmoney,legacy,byMykelSnapshotAt:pricesFeed.metadata?.updated_at??'unknown'});
+ console.log('CS2 price/image audit:',{verified,missing,csmoney,legacy,strict,byMykelSnapshotAt:pricesFeed.metadata?.updated_at??'unknown'});
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>db.$disconnect());
