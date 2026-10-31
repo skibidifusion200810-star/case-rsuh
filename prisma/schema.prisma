@@ -196,3 +196,14 @@ model AdminAuditLog {
  @@index([actorId,createdAt])
  @@index([targetType,targetId,createdAt])
 }
+
+model AdminCaseOverride {
+ slug String @id
+ price Int
+ updatedAt DateTime @updatedAt
+}
+model AdminItemOverride {
+ itemId String @id
+ weight Int
+ updatedAt DateTime @updatedAt
+}
