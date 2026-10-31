@@ -16,7 +16,7 @@ async function presentOffers(userId:string){
  const items=await db.inventoryItem.findMany({where:{id:{in:ids}},include:{item:true}});
  const map=new Map(items.map(x=>[x.id,x]));
  const toView=(id:string)=>{const entry=map.get(id);return entry?{
-  id,name:entry.item.name,rarity:entry.item.rarity,imageUrl:entry.item.imageUrl,
+  id,itemId:entry.itemId,name:entry.item.name,rarity:entry.item.rarity,imageUrl:entry.item.imageUrl,
   value:entry.valueAtDrop??entry.item.value,mergedCount:entry.mergedCount
  }:null};
  return offers.map(offer=>({
@@ -43,7 +43,7 @@ export async function GET(req:NextRequest){
    orderBy:{createdAt:'desc'},take:250
   }):[];
   const view=(i:typeof own[number])=>({
-   id:i.id,name:i.item.name,rarity:i.item.rarity,imageUrl:i.item.imageUrl,
+   id:i.id,itemId:i.itemId,name:i.item.name,rarity:i.item.rarity,imageUrl:i.item.imageUrl,
    value:i.valueAtDrop??i.item.value,mergedCount:i.mergedCount
   });
   return NextResponse.json({mine:own.map(view),recipient:player&&player.id!==user.id?player.username:null,
