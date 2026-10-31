@@ -26,7 +26,7 @@ export const caseDefs:readonly CaseDefinition[]=[
   ['Glock-18 | Water Elemental',BLUE,750],
   ['AK-47 | Redline',BLUE,300],
   ['AK-47 | Neon Rider',RARE,45],
-  ['M4A1-S | Hyper Beast',RARE,5]
+  ['AWP | Asiimov',EPIC,5]
  ])},
  {slug:'neon-circuit',name:'Neon Circuit',price:500,image:'Revolution Case',items:pool([
   ['MAC-10 | Disco Tech',COMMON,2700],
@@ -76,25 +76,25 @@ export const caseDefs:readonly CaseDefinition[]=[
   ['AWP | Dragon Lore',RED,15]
  ])},
  {slug:'butterfly-vault',name:'Butterfly Vault',price:100000,image:'Gamma 2 Case',items:pool([
-  ['AK-47 | Neon Rider',RARE,2400],
-  ['AWP | Asiimov',EPIC,2300],
-  ['AK-47 | Vulcan',EPIC,2000],
+  ['AK-47 | Neon Rider',RARE,1400],
+  ['AWP | Asiimov',EPIC,2700],
+  ['AK-47 | Vulcan',EPIC,2400],
   ['AWP | Containment Breach',EPIC,1400],
   ['Desert Eagle | Blaze',RED,1550],
   ['M4A1-S | Printstream',RED,250],
-  ['Butterfly Knife | Tiger Tooth',KNIFE,80],
-  ['Butterfly Knife | Fade',KNIFE,15],
+  ['Butterfly Knife | Tiger Tooth',KNIFE,180],
+  ['Butterfly Knife | Fade',KNIFE,115],
   ['AWP | Dragon Lore',RED,5]
  ])},
  {slug:'karambit-eclipse',name:'Karambit Eclipse',price:200000,image:'Dreams & Nightmares Case',items:pool([
-  ['M4A1-S | Hyper Beast',RARE,1000],
-  ['AK-47 | Neon Rider',RARE,1450],
-  ['AK-47 | Vulcan',EPIC,2500],
-  ['AWP | Containment Breach',EPIC,2000],
+  ['M4A1-S | Hyper Beast',RARE,600],
+  ['AK-47 | Neon Rider',RARE,500],
+  ['AK-47 | Vulcan',EPIC,3000],
+  ['AWP | Containment Breach',EPIC,2500],
   ['Desert Eagle | Blaze',RED,1500],
   ['M4A1-S | Printstream',RED,900],
-  ['Karambit | Doppler',KNIFE,500],
-  ['Karambit | Fade',KNIFE,120],
+  ['Karambit | Doppler',KNIFE,750],
+  ['Karambit | Fade',KNIFE,220],
   ['AWP | Dragon Lore',RED,30]
  ])}
 ] as const;
