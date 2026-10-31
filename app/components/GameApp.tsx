@@ -25,6 +25,7 @@ function AssetImage({src,alt,kind}:{src?:string|null,alt:string,kind:'case'|'ite
    : <span className={'art-placeholder art-'+kind} aria-label="Bild nicht verfügbar">✦</span>;
 }
 export default function GameApp({section}:{section:'cases'|'battles'|'inventory'|'leaderboard'|'upgrades'}){
+ const tab=section;
  const [multiWins,setMultiWins]=useState<{item:Item,inventoryId:string}[]>([]);
  const [multiSaleValue,setMultiSaleValue]=useState<number|null>(null);
  const [lastOpening,setLastOpening]=useState<{caseId:string,count:number}|null>(null);
@@ -33,7 +34,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
  const [spin,setSpin]=useState<{item:Item,inventoryId:string,isDemo:boolean,pool:Item[]}|null>(null);
  const [reducedMotion,setReducedMotion]=useState(false);
  const [formMode,setFormMode]=useState<'login'|'register'>('login'),[formError,setFormError]=useState('');
- const [cases,setCases]=useState<Case[]>([]),[me,setMe]=useState<User|null>(null),[inventory,setInventory]=useState<Inv[]>([]),[tab,setTab]=useState('cases'),[error,setError]=useState(''),[busy,setBusy]=useState(false),[login,setLogin]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[win,setWin]=useState<{item:Item,inventoryId:string,isDemo?:boolean}|null>(null),[detail,setDetail]=useState<Case|null>(null);
+ const [cases,setCases]=useState<Case[]>([]),[me,setMe]=useState<User|null>(null),[inventory,setInventory]=useState<Inv[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[login,setLogin]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[win,setWin]=useState<{item:Item,inventoryId:string,isDemo?:boolean}|null>(null),[detail,setDetail]=useState<Case|null>(null);
  async function get(url:string){const r=await fetch(url,{cache:'no-store'});if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'Serververbindung fehlgeschlagen ('+r.status+')')}return r.json()}
  async function refresh(){try{const [c,m]=await Promise.all([get('/api/game?action=cases'),get('/api/game?action=me')]);setCases(c.cases);setMe(m.user);setInventory(m.user?(await get('/api/game?action=inventory')).items:[]);setError('')}catch(e){setError(e instanceof Error?e.message:String(e))}}
  useEffect(()=>{void refresh();setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)},[]);
