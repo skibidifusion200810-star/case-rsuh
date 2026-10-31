@@ -14,7 +14,8 @@
     "test:openings": "tsx scripts/test-openings.ts",
     "test:leaderboard": "tsx scripts/test-leaderboard.ts",
     "test:battles-upgrades": "tsx scripts/test-battles-upgrades.ts",
-    "test:social": "tsx scripts/test-social.ts"
+    "test:social": "tsx scripts/test-social.ts",
+    "test:trades-duos": "tsx scripts/test-trades-duos.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
