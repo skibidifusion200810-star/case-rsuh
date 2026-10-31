@@ -72,6 +72,8 @@ model Opening {
 }
 
 model Battle {
+ rounds BattleRound[]
+ totalCost Int @default(0)
  id String @id @default(uuid())
  caseId String
  creatorId String
@@ -88,4 +90,19 @@ model Battle {
  @@index([status,createdAt])
  @@index([creatorId,status])
  @@index([guestId])
+}
+
+model BattleRound {
+ id String @id @default(uuid())
+ battleId String
+ battle Battle @relation(fields:[battleId],references:[id],onDelete:Cascade)
+ position Int
+ caseId String
+ casePrice Int
+ creatorItemId String?
+ guestItemId String?
+ creatorValue Int?
+ guestValue Int?
+ @@unique([battleId,position])
+ @@index([caseId])
 }
