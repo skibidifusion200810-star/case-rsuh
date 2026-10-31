@@ -10,7 +10,7 @@ type Case={id:string,name:string,slug:string,price:number,imageUrl?:string|null,
 type Inv={id:string,item:Item,valueAtDrop?:number|null,isDemo?:boolean};
 type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean};
 const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
-const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':i.priceOrigin==='CSMONEY_MARKET_REFERENCE'?'CS.MONEY-Angebotsreferenz (Drittquelle, Stand '+date+')':'Kein bestätigter Marktpreis'};
+const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':i.priceOrigin==='CSMONEY_MARKET_REFERENCE'?'Externe Marktpreisreferenz (Stand '+date+')':'Kein bestätigter Marktpreis'};
 const chance=(value:number,total:number)=>{
  const percent=total>0?value/total*100:0;
  return percent<0.01?percent.toFixed(4)+'%':percent<0.1?percent.toFixed(3)+'%':percent.toFixed(2)+'%';
