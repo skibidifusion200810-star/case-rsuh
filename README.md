@@ -18,7 +18,7 @@ Von der Startseite führen die Anmelde- und Spielbuttons nach `/cases?auth=login
 Virtuelles Kisten-Spiel auf Next.js, Prisma und PostgreSQL.
 
 ## Aktueller Stand
-Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, unbegrenzt kostenlose Starter-Kiste, horizontale Single- und Multi-Opening-Animationen, Inventar, Einzel-/Sammelverkauf, mehrteilige Case Battles gegen Spieler oder Bots, Upgrades und Bestenlisten sind implementiert. Ein Adminpanel und die vollständige Sicherheits-/Lastprüfung fehlen weiterhin. Keine Echtgeldtransaktionen oder Auszahlungen.
+Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, unbegrenzt kostenlose Starter-Kiste, horizontale Single- und Multi-Opening-Animationen, Inventar, Einzel-/Sammelverkauf, mehrteilige Case Battles gegen Spieler oder Bots, Upgrades und Bestenlisten sind implementiert. Ein geschütztes Adminpanel mit Guthaben-Gutschriften, Spielersperren, Chat-Moderation, Kistenverwaltung und Änderungsprotokoll ist implementiert. Eine vollständige Sicherheits-/Lastprüfung fehlt weiterhin. Keine Echtgeldtransaktionen oder Auszahlungen.
 
 ## CS2-Itemdaten und Bilder
 Die Kisten und Skins werden bei `npm run db:seed` aus der [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API) importiert, die auch von [ByMykel/counter-strike-items](https://github.com/ByMykel/counter-strike-items) verwendet wird.
@@ -267,3 +267,60 @@ Der PostgreSQL-Integrationstest `npm run test:trades-duos` enthält
 einen vollständigen Test **2 Menschen gegen 2 Bots**, inklusive
 Sitzsperren, Entfernen und erneuten Hinzufügen von Bots sowie
 Inventarauszahlung und Rückerstattung.
+
+## Admin-Panel: nur für das konfigurierte Eigentümerkonto
+
+Der Administrator öffnet `/admin` oder verwendet den Hotkey
+**Strg + Umschalt + A** (bei eingeloggtem Konto).
+Die Admin-Navigation wird ausschließlich für das konfigurierte Konto angezeigt.
+
+**Wichtig – einmalige Einrichtung auf Render:**
+
+1. Logge dich mit dem **bereits registrierten persönlichen CASE-RUSH-Konto** ein.
+2. Öffne `https://DEINE-DOMAIN.onrender.com/admin`. Solange noch kein
+   Administrator konfiguriert ist, wird deine **eigene Konto-ID (UUID)** angezeigt.
+   Verwende diese ID, **nicht** deinen Benutzernamen und keine E-Mail-Adresse.
+3. Öffne in Render den Webservice `case-rush` → **Environment** → neue Variable:
+   `ADMIN_USER_ID` = diese UUID.
+4. Speichere die Umgebungsvariable und starte einen neuen Deploy.
+5. Melde dich mit demselben Konto an und öffne erneut `/admin` oder
+   **Strg + Umschalt + A**.
+
+**Sicherheit:** `ADMIN_USER_ID` wird ausschließlich serverseitig gelesen.
+Der Hotkey und die Admin-URL verleihen keine Berechtigung. Jede GET- und
+POST-Anfrage der Admin-API prüft eine gültige Login-Sitzung, die exakte
+UUID, eventuelle Kontosperren und bei schreibenden Aktionen den
+Anfrageursprung. Ist `ADMIN_USER_ID` nicht eingerichtet oder ungültig,
+ist die Admin-API für **alle** Spieler gesperrt. Verwende nicht das
+früher genannte einfache Passwort `676767` als Adminschutz und
+trage niemals Passwörter in GitHub ein. Verwende für das Eigentümerkonto
+ein langes, einzigartiges Passwort; zusätzliche Zwei-Faktor-Authentifizierung
+sollte vor größerem öffentlichen Betrieb ergänzt werden.
+
+**Funktionen:**
+
+- **Spieler → „€ GEBEN“**: einem Spieler zwischen 0,01 € und
+  1.000.000,00 € **virtuelles Guthaben** zusätzlich gutschreiben.
+  Jeder Betrag wird als Integer-Cent validiert. Der Server verbucht
+  den Betrag atomar, bestätigt den aktualisierten Guthabenstand und
+  erstellt innerhalb derselben Transaktion einen unveränderlichen
+  Eintrag in `AdminAuditLog` (Administrator, Zielkonto, vorher/nachher,
+  Betrag, Zeit). Die Funktion erzeugt kein echtes Geld.
+- **Spielersperren**: Konto sperren oder entsperren. Beim Sperren werden
+  die bestehenden Sitzungen sofort beendet und eine neue Anmeldung
+  verweigert. Das Administrator-Konto kann sich nicht selbst sperren.
+- **Kistenverwaltung**: Preise und Drop-Gewichte bearbeiten. Änderungen
+  werden in `AdminCaseOverride` und `AdminItemOverride` gespeichert
+  und nach automatischen Seed-Importen wieder aufgespielt.
+  Die Gewichte sind **relative Gewichte**, keine Prozentwerte.
+  Mindestens ein bild- und preisgeprüftes Item muss pro Kiste aktiv bleiben.
+- **Chat-Moderation**: letzte 65 Nachrichten einsehen und löschen.
+- **Battle-Monitor**: vergangene/offene Duelle ansehen (nur lesend).
+- **Protokoll**: letzte 100 Adminaktionen mit Konto, Zeit und Ziel.
+
+Admin-API: `GET /api/admin?view=overview|users|cases|chat|battles|audit`
+und `POST /api/admin` mit
+`action=grantCoins|ban|unban|deleteMessage|setCasePrice|setDropWeight`.
+
+Die neue Datenbankstruktur wird bei Render durch `prisma db push`
+angelegt. CI-Integrationstest: `npm run test:admin`.
