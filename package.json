@@ -17,7 +17,8 @@
     "test:social": "tsx scripts/test-social.ts",
     "test:trades-duos": "tsx scripts/test-trades-duos.ts",
     "test:admin": "tsx scripts/test-admin.ts",
-    "test:events": "tsx scripts/test-events.ts"
+    "test:events": "tsx scripts/test-events.ts",
+    "test:levels": "tsx scripts/test-levels.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

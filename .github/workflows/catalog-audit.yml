@@ -53,3 +53,5 @@ jobs:
         run: npm run test:admin
       - name: Test server-side discounts, boosted luck and automatic event expiry
         run: npm run test:events
+      - name: Test admin badge, 100 levels and XP from all battle formats
+        run: npm run test:levels
