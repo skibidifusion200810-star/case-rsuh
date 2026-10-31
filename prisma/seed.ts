@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import {loadCsMoneyQuotes} from '../lib/csmoney-prices';
 import {caseDefs} from '../lib/case-config';
 import {referenceQuoteFor} from '../lib/market-reference';
+import {balanceCaseWeights} from '../lib/case-balance';
 
 const db = new PrismaClient();
 const BASE = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en';
@@ -120,6 +121,25 @@ async function main(){
   }
   if(imported===0)console.warn('No verified-price skins for '+def.slug+'; opening disabled until pricing is available');
   if(imported<pool.length)console.warn('[CASE INVENTORY]',def.name,'configured',pool.length,'available',imported);
+  // Only for PAID cases: adapt drop probabilities to verified market values.
+  // Keep the actual skin values and their source untouched. Free-case rarity
+  // (including 1-in-a-million gold) keeps its dedicated configured table.
+  if(def.price>0){
+   const items=await db.item.findMany({where:{caseId:c.id,weight:{gt:0}}});
+   if(items.length>1){
+    const balanced=balanceCaseWeights(items,def.price,0.88);
+    for(const {item,weight} of balanced.entries){
+     await db.item.update({where:{id:item.id},data:{weight}});
+    }
+    console.log('[BALANCE]',def.name,{
+     costEUR:(def.price/100).toFixed(2),
+     expectedEUR:(balanced.expectedCents/100).toFixed(2),
+     theoreticalRTP:(balanced.rtp*100).toFixed(1)+'%',
+     chanceOfProfit:(balanced.profitChance*100).toFixed(3)+'%'
+    });
+    if(balanced.rtp>0.9)console.warn('[BALANCE WARNING] expected payout exceeds 90%',def.name);
+   }
+  }
   console.log('Seeded:',def.name,'with',imported,'image-backed items');
  }
  console.log('CS2 price/image audit:',{verified,missing,csmoney,legacy,strict,byMykelSnapshotAt:pricesFeed.metadata?.updated_at??'unknown'});
