@@ -4,12 +4,13 @@ import {useEffect,useState} from 'react';
 import './admin.css';
 import AdminEventControls from './EventControls';
 
-type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events';
-type User={id:string;username:string;coins:number;openSlots:number;isBanned:boolean;createdAt:string;_count:{inventory:number;openings:number}};
+type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events'|'announcements';
+type User={id:string;username:string;lastSeenAt:string|null;lastLoginAt:string|null;visitCount:number;coins:number;openSlots:number;isBanned:boolean;createdAt:string;_count:{inventory:number;openings:number}};
 type AdminCase={id:string;slug:string;name:string;price:number;items:Array<{id:string;name:string;rarity:string;value:number;weight:number;imageUrl:string|null}>};
 type Chat={id:string;body:string;createdAt:string;user:{id:string;username:string}};
 type Audit={id:string;createdAt:string;actorUsername:string;action:string;targetType:string;targetId:string;details:string};
 type Battle={id:string;status:string;createdAt:string;duo:boolean;againstBot:boolean;bots:number;totalCost:number;creator:string;guest:string|null;winner:string|null};
+type Announcement={id:string;message:string;createdAt:string;expiresAt:string};
 type Stats={users:number;cases:number;openings:number;battles:number;chat:number;totalCoins:number};
 const euros=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
 const number=(v:string)=>Number(v.trim().replace(/\./g,'').replace(',','.'));
@@ -23,7 +24,7 @@ function parseMoney(v:string):number|null{
 }
 const sections:[Tab,string,string][]=[
  ['overview','ÜBERSICHT','▦'],['users','SPIELER','◈'],
- ['cases','KISTEN','⬡'],['events','EVENTS','✦'],['chat','CHAT','◉'],
+ ['cases','KISTEN','⬡'],['events','EVENTS','✦'],['announcements','ANKÜNDIGUNGEN','◉'],['chat','CHAT','◉'],
  ['battles','BATTLES','⚔'],['audit','PROTOKOLL','▤']
 ];
 export default function AdminPage(){
@@ -38,6 +39,9 @@ export default function AdminPage(){
  const [notice,setNotice]=useState('');
  const [query,setQuery]=useState('');
  const [users,setUsers]=useState<User[]>([]);
+ const [announcements,setAnnouncements]=useState<Announcement[]>([]);
+ const [announcementText,setAnnouncementText]=useState('');
+ const [announcementDuration,setAnnouncementDuration]=useState(30);
  const [cases,setCases]=useState<AdminCase[]>([]);
  const [chats,setChats]=useState<Chat[]>([]);
  const [battles,setBattles]=useState<Battle[]>([]);
@@ -68,6 +72,7 @@ export default function AdminPage(){
    setAuthorized(true);setLoginRequired(false);setError('');
    if(view==='overview'){setStats(body.stats);setAudits(body.actions||[])}
    if(view==='users')setUsers(body.users||[]);
+   if(view==='announcements')setAnnouncements(body.announcements||[]);
    if(view==='chat')setChats(body.messages||[]);
    if(view==='cases'){
     const values:Record<string,string>={};
@@ -84,6 +89,7 @@ export default function AdminPage(){
   finally{setLoading(false)}
  }
  useEffect(()=>{void load(tab)},[tab]);
+ useEffect(()=>{if(tab!=='users')return;const interval=setInterval(()=>{void load('users',query)},15000);return()=>clearInterval(interval)},[tab,query]);
  async function mutate(action:string,params:Record<string,unknown>,message:string,refresh:Tab=tab){
   setBusy(true);setError('');setNotice('');
   try{
@@ -153,7 +159,7 @@ export default function AdminPage(){
     </aside>
     <main className="admin-main">
      <div className="admin-page-intro"><div><div className="admin-kicker">CASE RUSH / ADMINISTRATION / {tab.toUpperCase()}</div>
-      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
+      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',announcements:'LIVE ANKÜNDIGUNGEN.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
       <p>Serverseitig geschützt · Alle Aktionen werden überprüft und sensible Änderungen protokolliert.</p>
      </div><button className="admin-refresh" onClick={()=>void load(tab)} disabled={busy||loading}>↻ AKTUALISIEREN</button></div>
      {notice&&<p className="admin-notice" role="status">{notice}</p>}
@@ -171,16 +177,29 @@ export default function AdminPage(){
       </section>
      </div>}
      {tab==='events'&&<AdminEventControls/>}
+     {tab==='announcements'&&<section className="admin-section">
+      <div className="admin-section-head"><h2>LIVE ANKÜNDIGUNG VERÖFFENTLICHEN</h2><span>GLOBAL · ALLE SPIELER</span></div>
+      <p className="admin-help">Deine Nachricht erscheint automatisch auf allen geöffneten Spielseiten.</p>
+      <form onSubmit={e=>{e.preventDefault();if(!announcementText.trim())return;void (async()=>{if(await mutate('publishAnnouncement',{message:announcementText.trim(),durationMinutes:announcementDuration},'Ankündigung veröffentlicht','announcements'))setAnnouncementText('')})()}} className="admin-announcement-form">
+       <label>DEINE ANKÜNDIGUNG<textarea maxLength={500} required rows={4} placeholder="Event startet in 5 Minuten!" value={announcementText} onChange={e=>setAnnouncementText(e.target.value)}/></label>
+       <label>ANZEIGEDAUER<select value={announcementDuration} onChange={e=>setAnnouncementDuration(Number(e.target.value))}>
+        {[5,10,30,60,120,1440].map(n=><option key={n} value={n}>{n===1440?'24 Stunden':n+' Minuten'}</option>)}
+       </select></label>
+       <button type="submit" className="admin-primary" disabled={busy||!announcementText.trim()}>✦ AN ALLE SPIELER SENDEN</button>
+      </form>
+      <div className="admin-section-head"><h2>LETZTE ANKÜNDIGUNGEN</h2></div>
+      {announcements.map(a=><div key={a.id} className="admin-announcement-row"><div><strong>{a.message}</strong><small>{date(a.createdAt)} · Ende {date(a.expiresAt)} · {new Date(a.expiresAt)>new Date()?'LIVE':'ABGELAUFEN'}</small></div><button className="admin-small-danger" disabled={busy} onClick={()=>void mutate('removeAnnouncement',{announcementId:a.id},'Ankündigung entfernt','announcements')}>ENTFERNEN</button></div>)}
+     </section>}
      {tab==='users'&&<section className="admin-section">
       <div className="admin-section-head"><h2>BENUTZERKONTEN</h2><span>GUTHABEN · SPERREN</span></div>
       <form className="admin-search" onSubmit={e=>{e.preventDefault();void load('users',query)}}>
        <input aria-label="Benutzer suchen" placeholder="Benutzernamen suchen …" value={query} onChange={e=>setQuery(e.target.value)}/>
        <button className="admin-primary">SPIELER SUCHEN ↗</button>
       </form>
-      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>SPIELER</th><th>GUTHABEN</th><th>ÖFFNUNGEN</th><th>INVENTAR</th><th>STATUS</th><th>AKTIONEN</th></tr></thead>
+      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>SPIELER</th><th>GUTHABEN</th><th>ÖFFNUNGEN</th><th>INVENTAR</th><th>STATUS</th><th>LETZTER ZUGRIFF</th><th>LETZTER LOGIN / ANMELDUNGEN</th><th>AKTIONEN</th></tr></thead>
        <tbody>{users.map(u=><tr key={u.id}><td><strong>{u.username}</strong><small>{date(u.createdAt)}</small></td>
         <td className="admin-gold">{euros(u.coins)}</td><td>{u._count.openings}</td><td>{u._count.inventory}</td>
-        <td><span className={'admin-state '+(u.isBanned?'blocked':'ok')}>{u.isBanned?'GESPERRT':'AKTIV'}</span></td>
+        <td><span className={'admin-state '+(u.isBanned?'blocked':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'ok':'blocked')}>{u.isBanned?'GESPERRT':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'● ONLINE':'○ OFFLINE'}</span></td><td>{u.lastSeenAt?date(u.lastSeenAt):'Unbekannt'}</td><td>{u.lastLoginAt?date(u.lastLoginAt):'Unbekannt'}<small>{u.visitCount} Anmeldungen</small></td>
         <td><div className="admin-row-buttons">
          <button className="admin-small-primary" onClick={()=>{setSelectedUser(u);setGrant('100,00')}}>€ GEBEN</button>
          <button className="admin-small" disabled={busy} onClick={()=>ban(u)}>{u.isBanned?'ENTSPERREN':'SPERREN'}</button>
