@@ -379,3 +379,73 @@ header.top nav{flex-wrap:wrap;justify-content:center}
 @keyframes crPanelEnter{from{opacity:.7;transform:translateX(45px)}to{opacity:1;transform:translateX(0)}}
 @media(max-width:560px){.cr-drop-alert{gap:7px;min-height:64px;padding:9px}.cr-drop-ping{flex-basis:65px;font-size:8px;letter-spacing:0}.cr-drop-ping span{font-size:17px}.cr-drop-alert>img{width:55px;height:48px}.cr-drop-message{font-size:11px}.cr-drop-message small{font-size:9px}.cr-social-triggers{bottom:13px;right:11px;gap:5px}.cr-social-launch,.cr-social-gift-launch{height:42px;padding:0 12px;font-size:10px}.cr-social-panel{width:100%;border:0}.cr-social-header{padding:19px 19px 16px}.cr-chat-messages{padding:10px 14px}}
 @media(prefers-reduced-motion:reduce){.cr-drop-alert,.cr-social-panel{animation:none!important}.cr-social-triggers *{transition:none!important}}
+
+
+/* CASE RUSH secure trading exchange + duplicate merging */
+.trading-hub{max-width:1280px;margin:auto;padding-bottom:90px}
+.trading-hub>h2{font-size:clamp(36px,4vw,56px);letter-spacing:-2px;margin:16px 0}
+.trading-lead{max-width:740px;line-height:1.6;color:#abb9ca}
+.trading-tabs{display:flex;align-items:stretch;gap:9px;margin:30px 0}
+.trading-tabs button{border:1px solid #4b5565;color:#c8d1df;background:#222831;padding:16px 25px;font-size:12px;font-weight:900;letter-spacing:1px;transition:border-color .2s,background .2s,transform .2s}
+.trading-tabs button:hover{transform:translateY(-2px);border-color:#ffbd55}
+.trading-tabs button.active{color:#171c24;background:#ffbd55;border-color:#ffbd55}
+.trading-recipient{display:flex;align-items:center;justify-content:space-between;gap:25px;background:#1c222b;border:1px solid #404958;padding:24px;margin-bottom:20px}
+.trading-recipient label{font-weight:950;letter-spacing:1.2px;font-size:12px}
+.trading-recipient p{font-size:12px;color:#9eabbd;margin:8px 0 0}
+.trading-recipient form{display:flex;gap:8px}
+.trading-recipient input,.trading-hub input{background:#11151c;color:white;border:1px solid #485361;padding:13px 15px;min-width:0}
+.trading-recipient input:focus{outline:1px solid #ffbd55}
+.trading-recipient button{white-space:nowrap}
+.trading-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.trading-column{background:#1b2029;border:1px solid #3d4654;padding:22px;min-width:0}
+.trading-column>p{color:#98a7bb;font-size:12px;line-height:1.5;min-height:38px}
+.trading-section-title{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #3d4654;padding:15px 0 12px;margin:15px 0}
+.trading-section-title h3{font-size:19px;letter-spacing:-.4px;margin:0;overflow-wrap:anywhere}
+.trading-section-title span{color:#ffbd55;font-size:10px;font-weight:950;white-space:nowrap;letter-spacing:1px}
+.trading-item-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:390px;overflow-y:auto;align-content:start}
+.trade-item{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px;background:#252c36;border:1px solid #414d5a;border-bottom:3px solid #6b7585;padding:10px 6px;min-height:166px;color:#e9edf4;text-align:center;transition:border-color .2s,transform .2s,background .2s}
+.trade-item:hover{transform:translateY(-3px);border-color:#e9b860}
+.trade-item.picked{background:#3c3426;border-color:#ffbe55;border-bottom-color:#ffc76e}
+.trade-item img{width:100%;height:75px;object-fit:contain}
+.trade-item .trade-art-empty{font-size:46px;color:#bd9c61}
+.trade-item strong{font-size:10px;overflow-wrap:anywhere;line-height:1.3}
+.trade-item>span:not(.trade-art-empty){font-size:12px;font-weight:950;color:#ffca75;margin-top:auto}
+.trade-item small{font-size:9px;letter-spacing:.6px;color:#96a5b8}
+.trade-item.picked small{color:#ffce82}
+.trading-actions{margin:17px 0 40px;padding:20px;background:linear-gradient(110deg,#302922,#1d2229);border:1px solid #514537;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.trading-actions>div{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.trading-actions span{font-size:10px;letter-spacing:1px;color:#a8b4c1;font-weight:900}
+.trading-actions strong{color:#ffc46c;font-size:19px;margin-right:15px}
+.trading-error,.trading-notice{border-left:3px solid #ed7387;background:#48252d;color:white;padding:14px 18px;font-size:12px}
+.trading-notice{border-color:#64d79b;background:#253e32}
+.trading-empty{text-align:center;padding:28px;background:#1d232c;border:1px solid #404959;color:#aab8c8;font-size:13px}
+.trading-offers{display:flex;flex-direction:column;gap:11px}
+.trading-offer{background:#20252e;border:1px solid #3e4755;padding:18px}
+.trading-offer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+.trading-offer-head strong{font-size:12px}.trading-offer-head small{display:block;color:#98a5b7;font-size:10px;margin-top:4px}
+.trade-state{font-size:10px;color:#b8c6d8;letter-spacing:1px;font-weight:900}
+.trade-state.pending{color:#ffbc55}.trade-state.accepted{color:#71dca8}
+.trading-offer-items{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:10px;padding:12px;background:#171b22;font-size:12px;color:#d8e0ea;overflow-wrap:anywhere}
+.trading-offer-items>span:nth-child(2){color:#ffbd55;text-align:center}
+.trading-offer-buttons{display:flex;gap:8px;margin-top:12px}
+.trading-merge-info{padding:28px;margin:10px 0 30px;background:linear-gradient(112deg,#292720,#1b2028);border:1px solid #64543a}
+.trading-merge-info h3{font-size:35px;letter-spacing:-1.3px;margin:18px 0}
+.trading-merge-info p{font-size:13px;line-height:1.7;color:#aab8c8;max-width:780px}
+.trading-merge-info p strong{color:#f1c584}
+.trading-merge-price{display:flex;align-items:center;gap:16px;font-weight:900;font-size:12px;margin:24px 0;color:#d6e0ed}
+.trading-merge-price strong{font-size:27px;color:#ffc56f}
+.trading-merge-group{border:1px solid #454d59;background:#1c222b;padding:18px;margin:14px 0}
+.trading-merge-group .trading-item-grid{display:flex;flex-wrap:wrap;max-height:none}
+.trading-merge-group .trade-item{width:155px;flex:0 1 155px}
+.trading-inventory-cta{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:18px 0 26px;background:#28251f;border:1px solid #624c2d;padding:17px;color:#ebc48d;font-size:12px;font-weight:800}
+.merged-tag{color:#ffc15b;font-size:11px;font-weight:900}.locked-tag{font-size:10px;color:#eeb77b;letter-spacing:.7px}
+.battle-modes button{min-width:0}
+.duo-lobby{display:grid;grid-template-columns:1fr 35px 1fr;align-items:center;gap:10px;text-align:center;margin:20px 0}
+.duo-lobby>div:not(.duo-vs){background:#242934;border:1px solid #46515f;display:flex;flex-direction:column;gap:10px;padding:18px 8px}
+.duo-lobby strong{color:#ffbf56;font-size:12px;letter-spacing:1px}
+.duo-lobby span{background:#323943;padding:11px 5px;font-size:12px;font-weight:800}
+.duo-vs{color:#ffbd55;font-size:20px;font-weight:1000}
+.duo-join-buttons{display:flex;flex-direction:column;gap:9px;margin:18px auto;max-width:350px}
+.duo-join-buttons button{font-size:11px}
+@media(max-width:850px){.trading-compare{grid-template-columns:1fr}.trading-item-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:640px){.trading-recipient{flex-direction:column;align-items:stretch}.trading-recipient form{flex-direction:column}.trading-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.trading-actions{flex-direction:column;align-items:stretch}.trading-tabs button{flex:1;font-size:10px;padding:13px 7px}.trading-merge-group .trade-item{width:calc(50% - 7px);flex-basis:calc(50% - 7px)}.trading-inventory-cta{flex-wrap:wrap}}
