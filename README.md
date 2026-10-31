@@ -90,7 +90,7 @@ Die genaue Quelle, EUR-Cent-Werte, Variante und Datierung stehen in `lib/market-
 
 Bestehende gesammelte Gegenstände werden im Inventar zum damals gespeicherten Wert verkauft. Die kostenlose Kiste bleibt unbegrenzt nutzbar; der 2,5-Sekunden-Cooldown schützt vor schnellen automatisierten Anfragen.
 
-## Case Battles 1-gegen-1 (Spieler oder Bot)
+## Case Battles 1-gegen-1 (gemischte Kisten, Spieler oder Bot)
 
 Der Menüpunkt **BATTLES** enthält ein öffentliches Lobby-System für 1v1-Duelle,
 mit der Möglichkeit, statt eines zweiten Spielers einen RUSH BOT zu wählen.
@@ -120,10 +120,10 @@ Der Menüpunkt **UPGRADES** bietet folgende einmaligen Freischaltungen:
 
 | Gleichzeitige kostenpflichtige Öffnungen | Kaufpreis (virtuelles Guthaben) |
 | ---: | ---: |
-| 2× | 1,00 € |
-| 4× | 10,00 € |
-| 8× | 15,00 € |
-| 10× | 20,00 € |
+| 2× | 100,00 € |
+| 4× | 500,00 € |
+| 8× | 1.000,00 € |
+| 10× | 2.000,00 € |
 
 Mit `openSlots` in PostgreSQL wird die **höchste** gekaufte Stufe
 dauerhaft gespeichert. Höhere Stufen können direkt gekauft werden;
@@ -154,3 +154,20 @@ Tests: `npm run test:battles-upgrades`,
 `npm run test:case-config`, `npm run audit:catalog`
 und `npm run build`. Der Render-Dienst muss nach dem GitHub-Commit
 erst neu bereitgestellt werden.
+
+## Neu: Case-Battle-Warteschlangen, Animationen und Live-Inventar
+
+- Ein Battle kann eine **geordnete Liste aus 1 bis 10 Kisten** enthalten (einschließlich unterschiedlicher Preisstufen).
+- Der Gesamtpreis jeder Liste ist der **Einsatz pro Spieler**. Alle Runden werden in PostgreSQL als `BattleRound` gespeichert.
+- Sobald ein realer Gegner beitritt oder ein Bot-Duell erstellt wird, werden die tatsächlichen Ergebnisse **einmalig innerhalb einer Datenbanktransaktion** festgelegt. Die Rotation von **beiden Waffenstreifen pro Runde** zeigt nur diese feststehenden Ergebnisse.
+- Der Gewinner erhält **beide Gegenstände jeder Runde** im Inventar. Neue Battle-Drops tragen eine `battleId` und die API bestätigt mit `awardedItemCount`, wie viele Items tatsächlich verknüpft sind.
+- Der Button „GEWINNE IM INVENTAR ANSEHEN“ aktualisiert das Inventar und wechselt direkt dorthin. Vor dem aktuellen Schema-Update gespeicherte Battle-Drops haben noch keine neue `battleId`; ihre Besitzdaten dürfen bei einer Migration nicht doppelt gutgeschrieben werden.
+- Für eine normale **Mehrfachöffnung** werden pro Kiste eigene links-nach-rechts rotierende Waffenlisten angezeigt. Danach kann jeder Drop einzeln oder per **ALLES VERKAUFEN** innerhalb einer einzigen Transaktion verkauft werden.
+
+## Kistenökonomie und Skin.club-Inspiration
+
+CASE RUSH übernimmt keine fremden Grafiken und keine realen Ein-/Auszahlungen. Die öffentliche Darstellung echter Drops mit vielen niedrigen Werten und seltenen Highlights dient lediglich als Konzeptvorbild. Die Kisten nutzen eine eigene Preis-/Chancenberechnung: Beim `db:seed` werden die Dropgewichte an den **beobachteten Preis des konkreten Skin-Zustands** angepasst. Die theoretische durchschnittliche Auszahlung bezahlter Kisten wird nach Möglichkeit auf **höchstens 88 % des Einsatzes** begrenzt; tatsächlich eingespielte Gewinne bleiben unabhängig davon zufällig.
+
+Kostenlose Öffnungen behalten ihr eigenes Dropgewichts-Schema und Gold-Chance (0,0001 %). Die ersten fünf Kisten enthalten einen anhand eines 29.10.2026-Preissnapshots dokumentierten Skin um 1 € (`Tec-9 | Re-Entry (Field-Tested)`). Cent-Skins gibt es ausschließlich in den ersten zwei Kisten. Die 2.000-€-Kiste enthält keine grauen/blauen Items und einen seltenen Dragon-Lore-Hauptgewinn.
+
+Diese Werte sind **keine aktuellen CS.MONEY-Handelspreise oder Gewinnauszahlungen in echten Euro**, sondern virtuelle Wertreferenzen, die sich nur bei dokumentierten Datenbank-Updates verändern. Die aktuelle RTP-Auswertung erscheint im Deploy-Log als `[BALANCE]`; die tatsächlichen Drop-Chancen werden aus den danach gespeicherten Itemgewichten berechnet. Bei fehlenden Marktdaten können sich verfügbare Items und tatsächliche Chancen ändern.
