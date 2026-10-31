@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import type {Item,Prisma} from '@prisma/client';
 import {db} from '@/lib/db';
+import {qualifiesForGlobalDrop} from '@/lib/social';
 import {createHash,randomInt} from 'node:crypto';
 
 export const dynamic='force-dynamic';
@@ -124,6 +125,17 @@ export async function POST(req:NextRequest){
      {ownerId:user.id,itemId:r.a.id,valueAtDrop:r.a.value,battleId:battle.id},
      {ownerId:user.id,itemId:r.b.id,valueAtDrop:r.b.value,battleId:battle.id}
     ])});
+    if(won){
+     const rewards=await tx.inventoryItem.findMany({
+      where:{battleId:battle.id,ownerId:user.id},include:{item:true}
+     });
+     const rare=rewards.filter(r=>qualifiesForGlobalDrop({...r.item,value:r.valueAtDrop??r.item.value}));
+     if(rare.length)await tx.rareDropEvent.createMany({data:rare.map(r=>({
+      username:user.username,itemName:r.item.name,rarity:r.item.rarity,
+      value:r.valueAtDrop??r.item.value,imageUrl:r.item.imageUrl,
+      inventoryItemId:r.id,source:'BATTLE'
+     }))});
+    }
     return tx.battle.update({where:{id:battle.id},data:{
      status:'FINISHED',winnerId:won?user.id:'BOT',
      creatorItemId:results[0].a.id,guestItemId:results[0].b.id,
@@ -170,6 +182,16 @@ export async function POST(req:NextRequest){
      {ownerId:winnerId,itemId:r.a.id,valueAtDrop:r.a.value,battleId:b.id},
      {ownerId:winnerId,itemId:r.b.id,valueAtDrop:r.b.value,battleId:b.id}
     ])});
+    const [awarded,winner]=await Promise.all([
+     tx.inventoryItem.findMany({where:{battleId:b.id,ownerId:winnerId},include:{item:true}}),
+     tx.user.findUniqueOrThrow({where:{id:winnerId},select:{username:true}})
+    ]);
+    const rare=awarded.filter(r=>qualifiesForGlobalDrop({...r.item,value:r.valueAtDrop??r.item.value}));
+    if(rare.length)await tx.rareDropEvent.createMany({data:rare.map(r=>({
+     username:winner.username,itemName:r.item.name,rarity:r.item.rarity,
+     value:r.valueAtDrop??r.item.value,imageUrl:r.item.imageUrl,
+     inventoryItemId:r.id,source:'BATTLE'
+    }))});
     return tx.battle.findUniqueOrThrow({where:{id:b.id},include:{rounds:true}});
    },{isolationLevel:'Serializable'});
    return NextResponse.json({battle:(await present([joined],user.id))[0]});
