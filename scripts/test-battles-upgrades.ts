@@ -76,12 +76,44 @@ async function main(){
  const two=await request(game,'/api/game',{action:'open',caseId:c.id,count:2},owner.cookie);
  assert.equal(two.status,200,'2x opening must work with upgrade');
  assert.equal(two.json.results.length,2);
- assert.equal((await db.user.findUniqueOrThrow({where:{id:owner.id}})).coins,balance-4*c.price-10000);
+ const bulkSold=await request(game,'/api/game',
+  {action:'sellBatch',inventoryIds:two.json.results.map((x:{inventoryId:string})=>x.inventoryId)},owner.cookie);
+ assert.equal(bulkSold.status,200,'Atomic sell-all succeeds');
+ assert.equal(bulkSold.json.count,2);
+ const again=await request(game,'/api/game',
+  {action:'sellBatch',inventoryIds:two.json.results.map((x:{inventoryId:string})=>x.inventoryId)},owner.cookie);
+ assert.equal(again.status,400,'Bulk sell cannot double-credit items');
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:owner.id}})).coins,balance-4*c.price-10000+bulkSold.json.value);
  const unowned=await request(game,'/api/game',{action:'open',caseId:c.id,count:4},owner.cookie);
  assert.equal(unowned.status,400,'Count exceeding owned slots rejected');
  const finalTier=await request(game,'/api/game',{action:'upgrade',tier:10},owner.cookie);
  assert.equal(finalTier.status,200,'10x upgrade available directly');
  assert.equal(finalTier.json.user.openSlots,10);
+ // Mixed-price case battle: creator and guest must each receive the configured
+ // rounds, while only the winner receives both sides' rewards in inventory.
+ const expensive=await db.case.findUniqueOrThrow({where:{slug:'karambit-eclipse'}});
+ const mixed=await request(battleAction,'/api/battles',
+  {action:'create',caseIds:[c.id,expensive.id],againstBot:false},third.cookie);
+ assert.equal(mixed.status,200,'Mixed 1€+2000€ battle created');
+ assert.equal(mixed.json.battle.totalCost,c.price+expensive.price,'Entry cost is the sum');
+ assert.equal(mixed.json.battle.rounds.length,2,'Two distinct rounds persisted');
+ assert.deepEqual(mixed.json.battle.rounds.map((r:{caseId:string})=>r.caseId),
+  [c.id,expensive.id],'Mixed case order retained');
+ const mixedJoined=await request(battleAction,'/api/battles',
+  {action:'join',battleId:mixed.json.battle.id},guest.cookie);
+ assert.equal(mixedJoined.status,200,'Guest joins mixed battle');
+ assert.equal(mixedJoined.json.battle.status,'FINISHED');
+ assert.equal(mixedJoined.json.battle.rounds.length,2);
+ const mixedWinner=mixedJoined.json.battle.winner==='creator'?third.id:guest.id;
+ assert.equal(mixedJoined.json.battle.awardedItemCount,4,'Four item awards confirmed');
+ assert.equal(await db.inventoryItem.count({where:{
+   ownerId:mixedWinner,battleId:mixed.json.battle.id
+ }}),4,'Winner owns exactly four items linked to mixed battle');
+ assert.equal(mixedJoined.json.battle.creatorTotal,
+  mixedJoined.json.battle.rounds.reduce((a:number,r:{creatorDrop:{value:number}})=>a+r.creatorDrop.value,0));
+ assert.equal(mixedJoined.json.battle.guestTotal,
+  mixedJoined.json.battle.rounds.reduce((a:number,r:{guestDrop:{value:number}})=>a+r.guestDrop.value,0));
+
  const free=await db.case.findUniqueOrThrow({where:{slug:'first-drop'}});
  const freeBatch=await request(game,'/api/game',{action:'open',caseId:free.id,count:2},owner.cookie);
  assert.equal(freeBatch.status,400,'Free case cannot be opened in a batch');
