@@ -45,6 +45,13 @@ export async function GET(req:NextRequest){
      endsAt:event.endsAt.toISOString()}:null
    },{headers:noStore});
   }
+  if(view==='activity'){
+   const userId=req.nextUrl.searchParams.get('userId')||'';
+   const player=await db.user.findUnique({where:{id:userId},select:{id:true,username:true,lastLoginAt:true,lastSeenAt:true,visitCount:true}});
+   if(!player)return fail('Spieler nicht gefunden',404);
+   const activity=await db.userAccessLog.findMany({where:{userId},orderBy:{createdAt:'desc'},take:100,select:{id:true,activity:true,createdAt:true}});
+   return NextResponse.json({player,activity},{headers:noStore});
+  }
   if(view==='announcements'){
    const announcements=await db.adminAnnouncement.findMany({orderBy:{createdAt:'desc'},take:30});
    return NextResponse.json({announcements},{headers:noStore});
