@@ -39,3 +39,5 @@ jobs:
         run: npm run audit:catalog
       - name: Test unlimited free and paid case opening transactions
         run: npm run test:openings
+      - name: Test leaderboard totals and ordering
+        run: npm run test:leaderboard
