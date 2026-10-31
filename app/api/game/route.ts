@@ -4,6 +4,7 @@ import {randomBytes,createHash,randomInt} from 'node:crypto';
 import argon2 from 'argon2';
 import {priceForUpgrade} from '@/lib/upgrades';
 import {qualifiesForGlobalDrop} from '@/lib/social';
+import {getLiveEvent,eventPrice,eventWeight,eventPublic} from '@/lib/events';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 async function user(req:NextRequest){
@@ -22,7 +23,18 @@ const safeUser=(u:{id:string,username:string,coins:number,openSlots:number,start
 export async function GET(req:NextRequest){
  try{
   const cmd=req.nextUrl.searchParams.get('action')||'cases';
-  if(cmd==='cases')return NextResponse.json({cases:await db.case.findMany({include:{items:{where:{weight:{gt:0},value:{gte:1},imageUrl:{not:null}}}},orderBy:{price:'asc'}})});
+  if(cmd==='event')return NextResponse.json({event:eventPublic(await getLiveEvent(db))},
+   {headers:{'Cache-Control':'no-store'}});
+  if(cmd==='cases'){
+   const [cases,event]=await Promise.all([
+    db.case.findMany({include:{items:{where:{weight:{gt:0},value:{gte:1},imageUrl:{not:null}}}},orderBy:{price:'asc'}}),
+    getLiveEvent(db)
+   ]);
+   return NextResponse.json({cases:cases.map(c=>({
+    ...c,originalPrice:c.price,price:eventPrice(c.price,event),
+    items:c.items.map(i=>({...i,weight:eventWeight(i,c.price,event)}))
+   })),event:eventPublic(event)},{headers:{'Cache-Control':'no-store'}});
+  }
   const u=await user(req);
   if(cmd==='me')return NextResponse.json({user:u?safeUser(u):null});
   if(cmd==='inventory'){
@@ -84,7 +96,10 @@ export async function POST(req:NextRequest){
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
-    const eligible=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl);
+    const event=await getLiveEvent(tx);
+    const effectivePrice=eventPrice(c.price,event);
+    const eligible=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl)
+     .map(i=>({...i,weight:eventWeight(i,c.price,event)}));
     if(!eligible.length)throw new Error('Keine überprüften Gewinne verfügbar');
     if(c.price===0){
      if(count>1)throw Error('Gratis-Kisten können nur einzeln geöffnet werden');
@@ -95,7 +110,7 @@ export async function POST(req:NextRequest){
      });
      if(!changed.count)throw Error('Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten');
     }else{
-     const debit=c.price*count;
+     const debit=effectivePrice*count;
      const charged=await tx.user.updateMany({
       where:{id:u.id,coins:{gte:debit},openSlots:{gte:count}},
       data:{coins:{decrement:debit}}
