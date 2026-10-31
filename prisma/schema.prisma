@@ -11,6 +11,7 @@ model User {
   passwordHash String
   coins Int @default(500)
   starterClaimed Boolean @default(false)
+  freeLastOpenedAt DateTime?
   createdAt DateTime @default(now())
   sessions Session[]
   inventory InventoryItem[]
@@ -54,6 +55,7 @@ model InventoryItem {
   item Item @relation(fields: [itemId], references: [id])
   soldAt DateTime?
   valueAtDrop Int?
+  isDemo Boolean @default(false)
   createdAt DateTime @default(now())
 }
 model Opening {
