@@ -10,49 +10,52 @@ const pool=(entries:Array<[string,Rarity,number]>):PoolEntry[]=>
  entries.map(([name,rarity,weight])=>({name,rarity,weight}));
 export const caseDefs:readonly CaseDefinition[]=[
  {slug:'first-drop',name:'First Drop',price:0,image:'Kilowatt Case',items:pool([
-  ['P250 | Sand Dune',COMMON,479999],
+  ['P250 | Sand Dune',COMMON,478999],
   ['MP9 | Sand Dashed',COMMON,340000],
   ['SCAR-20 | Sand Mesh',COMMON,160000],
   ['MP7 | Army Recon',COMMON,19500],
+  ['Tec-9 | Re-Entry',BLUE,1000],
   ['AK-47 | Neon Rider',RARE,400],
   ['AWP | Asiimov',EPIC,100],
   ['Karambit | Doppler',KNIFE,1]
  ])},
  {slug:'urban-supply',name:'Urban Supply',price:100,image:'Recoil Case',items:pool([
-  ['P250 | Sand Dune',COMMON,3800],
+  ['P250 | Sand Dune',COMMON,2300],
   ['MP9 | Sand Dashed',COMMON,3200],
   ['SCAR-20 | Sand Mesh',COMMON,2700],
   ['MP7 | Army Recon',COMMON,250],
+  ['Tec-9 | Re-Entry',BLUE,1500],
   ['Glock-18 | Water Elemental',RARE,45],
   ['AWP | Asiimov',EPIC,5]
  ])},
  {slug:'neon-circuit',name:'Neon Circuit',price:500,image:'Revolution Case',items:pool([
-  ['USP-S | Cortex',RARE,3200],
-  ['Glock-18 | Water Elemental',BLUE,2300],
-  ['AK-47 | Redline',RARE,1700],
-  ['M4A1-S | Hyper Beast',RARE,1500],
-  ['P90 | Asiimov',RARE,1080],
+  ['Tec-9 | Re-Entry',BLUE,7000],
+  ['P250 | Franklin',EPIC,1200],
+  ['USP-S | Cortex',RARE,1000],
+  ['Glock-18 | Water Elemental',RARE,400],
+  ['AK-47 | Redline',RARE,200],
   ['AWP | Asiimov',EPIC,180],
-  ['M4A1-S | Printstream',RED,40]
+  ['M4A1-S | Printstream',RED,20]
  ])},
  {slug:'crimson-strike',name:'Crimson Strike',price:2000,image:'Fracture Case',items:pool([
-  ['USP-S | Cortex',RARE,2000],
-  ['Glock-18 | Water Elemental',BLUE,2000],
-  ['AK-47 | Redline',RARE,1200],
-  ['AK-47 | Neon Rider',RARE,1700],
-  ['P90 | Asiimov',RARE,1100],
-  ['AWP | Asiimov',EPIC,1200],
-  ['M4A1-S | Printstream',RED,500],
-  ['Desert Eagle | Blaze',RED,300]
+  ['Tec-9 | Re-Entry',BLUE,7200],
+  ['Galil AR | Black Sand',BLUE,1000],
+  ['USP-S | Cortex',RARE,800],
+  ['AK-47 | Redline',RARE,500],
+  ['M4A1-S | Hyper Beast',RARE,300],
+  ['AWP | Asiimov',EPIC,150],
+  ['M4A1-S | Printstream',RED,40],
+  ['Desert Eagle | Blaze',RED,10]
  ])},
  {slug:'arctic-phantom',name:'Arctic Phantom',price:7500,image:'Prisma 2 Case',items:pool([
-  ['USP-S | Cortex',RARE,3200],
-  ['Glock-18 | Water Elemental',BLUE,1600],
-  ['AK-47 | Redline',RARE,1600],
-  ['AWP | Asiimov',EPIC,1800],
-  ['USP-S | Printstream',RED,1100],
-  ['M4A1-S | Printstream',RED,600],
-  ['AWP | Containment Breach',EPIC,100]
+  ['Tec-9 | Re-Entry',BLUE,6500],
+  ['P250 | Franklin',EPIC,700],
+  ['USP-S | Cortex',RARE,1300],
+  ['AK-47 | Redline',RARE,600],
+  ['AWP | Asiimov',EPIC,500],
+  ['M4A1-S | Printstream',RED,270],
+  ['AWP | Containment Breach',EPIC,100],
+  ['Desert Eagle | Blaze',RED,30]
  ])},
  {slug:'royal-arsenal',name:'Royal Arsenal',price:25000,image:'Clutch Case',items:pool([
   ['USP-S | Cortex',RARE,1500],

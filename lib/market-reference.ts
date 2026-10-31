@@ -6,6 +6,21 @@
  */
 export type ReferenceQuote={wear:'Field-Tested'|'Factory New';eurCents:number;observedAt:string;provider:string;sourceUrl:string};
 export const verifiedReferenceQuotes:Record<string,ReferenceQuote>={
+ 'Tec-9 | Re-Entry':{
+  wear:'Field-Tested',eurCents:99,observedAt:'2026-10-29T07:30:00+01:00',
+  provider:'CS.MONEY listing via Veriloot',
+  sourceUrl:'https://veriloot.gg/en/skins/tec-9/re-entry/field-tested'
+ },
+ 'P250 | Franklin':{
+  wear:'Field-Tested',eurCents:105,observedAt:'2026-10-31T14:55:00+01:00',
+  provider:'CS.MONEY listing via Veriloot',
+  sourceUrl:'https://veriloot.gg/en/top/skins-under-5-euros'
+ },
+ 'Galil AR | Black Sand':{
+  wear:'Field-Tested',eurCents:49,observedAt:'2026-10-29T07:30:00+01:00',
+  provider:'CS.MONEY listing via Veriloot',
+  sourceUrl:'https://veriloot.gg/en/skins/galil-ar/black-sand/field-tested'
+ },
  'AWP | Dragon Lore':{
   wear:'Factory New',eurCents:1150106,observedAt:'2026-11-01T00:00:00+01:00',
   provider:'CS.MONEY listing via FragStash (reference snapshot, not live)',
