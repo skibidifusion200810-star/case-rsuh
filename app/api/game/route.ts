@@ -59,12 +59,12 @@ export async function POST(req:NextRequest){
    let u;
    if(action==='register'){
     const existing=await db.user.findUnique({where:{username}});if(existing)return fail('Benutzername schon vergeben',409);
-    u=await db.user.create({data:{username,passwordHash:await argon2.hash(password),coins:100000}});
+    u=await db.user.create({data:{username,passwordHash:await argon2.hash(password),coins:100000,visitCount:1,lastLoginAt:new Date(),lastSeenAt:new Date()}});
    }else{
     const found=await db.user.findUnique({where:{username}});
     if(!found||!(await argon2.verify(found.passwordHash,password)))return fail('Falsche Zugangsdaten',401);
     if(found.isBanned)return fail('Dieses Konto wurde gesperrt',403);
-    u=found;
+    u=await db.user.update({where:{id:found.id},data:{visitCount:{increment:1},lastLoginAt:new Date(),lastSeenAt:new Date()}});
    }
    const token=randomBytes(32).toString('hex');
    await db.session.create({data:{userId:u.id,tokenHash:hash(token),expiresAt:new Date(Date.now()+7*86400000)}});
