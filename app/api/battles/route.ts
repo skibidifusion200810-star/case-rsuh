@@ -24,10 +24,10 @@ function draw(items:Item[]){
  return items[items.length-1];
 }
 async function present(battles:BattleFull[],userId?:string){
- const userIds=[...new Set(battles.flatMap(x=>[x.creatorId,x.guestId].filter((s):s is string=>!!s)))];
+ const userIds=[...new Set(battles.flatMap(x=>[x.creatorId,x.creatorPartnerId,x.guestId,x.guestPartnerId].filter((s):s is string=>!!s)))];
  const caseIds=[...new Set(battles.flatMap(x=>[x.caseId,...x.rounds.map(r=>r.caseId)]))];
  const itemIds=[...new Set(battles.flatMap(x=>[
-  x.creatorItemId,x.guestItemId,...x.rounds.flatMap(r=>[r.creatorItemId,r.guestItemId])
+  x.creatorItemId,x.guestItemId,...x.rounds.flatMap(r=>[r.creatorItemId,r.creatorPartnerItemId,r.guestItemId,r.guestPartnerItemId])
  ].filter((s):s is string=>!!s)))];
  const [users,cases,items,awardRows]=await Promise.all([
   db.user.findMany({where:{id:{in:userIds}},select:{id:true,username:true}}),
@@ -44,22 +44,31 @@ async function present(battles:BattleFull[],userId?:string){
   const rounds=b.rounds.length?b.rounds.slice().sort((a,z)=>a.position-z.position).map(r=>({
    position:r.position,caseId:r.caseId,case:casesById.get(r.caseId)??null,
    casePrice:r.casePrice,creatorDrop:drop(r.creatorItemId,r.creatorValue),
-   guestDrop:drop(r.guestItemId,r.guestValue)
+   creatorPartnerDrop:drop(r.creatorPartnerItemId,r.creatorPartnerValue),
+   guestDrop:drop(r.guestItemId,r.guestValue),guestPartnerDrop:drop(r.guestPartnerItemId,r.guestPartnerValue)
   })):[{
    position:0,caseId:b.caseId,case:casesById.get(b.caseId)??null,
    casePrice:b.totalCost||casesById.get(b.caseId)?.price||0,
-   creatorDrop:drop(b.creatorItemId,b.creatorValue),guestDrop:drop(b.guestItemId,b.guestValue)
+   creatorDrop:drop(b.creatorItemId,b.creatorValue),guestDrop:drop(b.guestItemId,b.guestValue),
+   creatorPartnerDrop:null,guestPartnerDrop:null
   }];
-  const creatorTotal=rounds.reduce((sum,r)=>sum+(r.creatorDrop?.value??0),0);
-  const guestTotal=rounds.reduce((sum,r)=>sum+(r.guestDrop?.value??0),0);
+  const creatorTotal=rounds.reduce((sum,r)=>sum+(r.creatorDrop?.value??0)+(r.creatorPartnerDrop?.value??0),0);
+  const guestTotal=rounds.reduce((sum,r)=>sum+(r.guestDrop?.value??0)+(r.guestPartnerDrop?.value??0),0);
   return {
-   id:b.id,status:b.status,againstBot:b.againstBot,
+   id:b.id,status:b.status,againstBot:b.againstBot,duo:b.duo,
+   creatorPartner:b.creatorPartnerId?names.get(b.creatorPartnerId)??'Spieler':null,
+   guestPartner:b.guestPartnerId?names.get(b.guestPartnerId)??'Spieler':null,
+   creatorTeam:[names.get(b.creatorId)??'Spieler',b.creatorPartnerId?names.get(b.creatorPartnerId)??'Spieler':null],
+   guestTeam:[b.guestId?names.get(b.guestId)??'Spieler':null,b.guestPartnerId?names.get(b.guestPartnerId)??'Spieler':null],
    creator:names.get(b.creatorId)??'Spieler',
    guest:b.againstBot?'RUSH BOT':b.guestId?names.get(b.guestId)??'Gast':null,
-   viewerRole:userId===b.creatorId?'creator':userId&&userId===b.guestId?'guest':'spectator',
+   viewerRole:userId===b.creatorId?'creator':userId===b.creatorPartnerId?'creatorPartner':userId===b.guestId?'guest':userId===b.guestPartnerId?'guestPartner':'spectator',
    winner:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
    case:casesById.get(b.caseId)??null,
-   awardedItemCount:b.winnerId&&b.winnerId!=='BOT'?awards.get(b.id+':'+b.winnerId)??0:0,
+   awardedItemCount:b.winnerId&&b.winnerId!=='BOT'?(b.duo?
+    (awards.get(b.id+':'+b.winnerId)??0)+(awards.get(b.id+':'+(b.winnerId===b.creatorId?b.creatorPartnerId:b.guestPartnerId))??0):
+    awards.get(b.id+':'+b.winnerId)??0):0,
+   viewerAwardCount:userId?awards.get(b.id+':'+userId)??0:0,
    totalCost:b.totalCost||rounds.reduce((sum,r)=>sum+r.casePrice,0),
    rounds,creatorTotal,guestTotal,
    creatorDrop:rounds[0].creatorDrop,guestDrop:rounds[0].guestDrop,
@@ -148,7 +157,7 @@ export async function POST(req:NextRequest){
    const battleId=typeof body.battleId==='string'?body.battleId:'';
    const joined=await db.$transaction(async tx=>{
     const b=await tx.battle.findUnique({where:{id:battleId},include:{rounds:true}});
-    if(!b||b.status!=='WAITING'||b.againstBot||b.guestId)throw Error('Battle nicht mehr offen');
+    if(!b||b.status!=='WAITING'||b.againstBot||b.duo||b.guestId)throw Error('Battle nicht mehr offen');
     if(b.creatorId===user.id)throw Error('Du kannst nicht gegen dich selbst spielen');
     const rounds=b.rounds.length?b.rounds.slice().sort((a,z)=>a.position-z.position):[];
     const ids=rounds.length?rounds.map(r=>r.caseId):[b.caseId];
@@ -200,7 +209,7 @@ export async function POST(req:NextRequest){
    const battleId=typeof body.battleId==='string'?body.battleId:'';
    const canceled=await db.$transaction(async tx=>{
     const b=await tx.battle.findFirst({where:{id:battleId,creatorId:user.id,status:'WAITING',
-     againstBot:false,guestId:null},include:{rounds:true}});
+     duo:false,againstBot:false,guestId:null},include:{rounds:true}});
     if(!b)throw Error('Nur eigene offene Battles können abgebrochen werden');
     const changed=await tx.battle.updateMany({where:{id:b.id,creatorId:user.id,status:'WAITING',guestId:null},
      data:{status:'CANCELED',finishedAt:new Date()}});
