@@ -55,6 +55,7 @@ export default function Home(){
     <Link href="/inventory">INVENTAR</Link>
     <Link href="/leaderboard">BESTENLISTE</Link>
     <Link href="/upgrades">UPGRADES</Link>
+    <Link href="/trading">TRADING</Link>
     <button type="button" className="landing-social-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
    </nav>
    <div className="landing-account">
