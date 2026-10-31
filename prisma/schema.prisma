@@ -10,6 +10,7 @@ model User {
   username String @unique
   passwordHash String
   coins Int @default(100000)
+  isBanned Boolean @default(false)
   openSlots Int @default(1)
   starterClaimed Boolean @default(false)
   freeLastOpenedAt DateTime?
@@ -180,4 +181,18 @@ model TradeOffer {
   finishedAt DateTime?
   @@index([senderId,status,createdAt])
   @@index([recipientId,status,createdAt])
+}
+
+model AdminAuditLog {
+ id String @id @default(uuid())
+ actorId String
+ actorUsername String
+ action String
+ targetType String
+ targetId String
+ details String @default("{}")
+ createdAt DateTime @default(now())
+ @@index([createdAt])
+ @@index([actorId,createdAt])
+ @@index([targetType,targetId,createdAt])
 }
