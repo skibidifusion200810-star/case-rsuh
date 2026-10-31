@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
 import type {Prisma} from '@prisma/client';
 import {socialViewer} from '@/lib/social';
+import {EVENT_ID,getLiveEvent,eventPublic} from '@/lib/events';
 
 export const dynamic='force-dynamic';
 const noStore={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
@@ -32,6 +33,18 @@ export async function GET(req:NextRequest){
   });
   const view=req.nextUrl.searchParams.get('view')||'overview';
   if(view==='status')return NextResponse.json({admin:true,username:gate.user.username},{headers:noStore});
+  if(view==='events'){
+   const [event,recent]=await Promise.all([
+    db.gameEvent.findUnique({where:{id:EVENT_ID}}),
+    db.adminAuditLog.findMany({where:{action:{in:['START_EVENT','STOP_EVENT']}},
+     orderBy:{createdAt:'desc'},take:15})
+   ]);
+   return NextResponse.json({
+    event:eventPublic(await getLiveEvent(db)),recent,previous:event&&event.endsAt<=new Date()?{
+     discountPercent:event.discountPercent,luckMultiplier:event.luckMultiplier,
+     endsAt:event.endsAt.toISOString()}:null
+   },{headers:noStore});
+  }
   if(view==='overview'){
    const [users,cases,openings,battles,chat,totals,lastActions]=await Promise.all([
     db.user.count(),db.case.count(),db.opening.count(),
@@ -100,6 +113,48 @@ export async function POST(req:NextRequest){
   const input=await req.json() as Record<string,unknown>;
   if(!input||Array.isArray(input)||typeof input!=='object')return fail('Ungültige Anfrage');
   const action=typeof input.action==='string'?input.action:'';
+  if(action==='startEvent'){
+   const discount=input.discountPercent,luck=input.luckMultiplier,duration=input.durationMinutes;
+   if(typeof discount!=='number'||!Number.isInteger(discount)||discount<0||discount>90||discount%5!==0)
+    return fail('Rabatt muss zwischen 0 und 90 % liegen (5er-Schritte)');
+   if(typeof luck!=='number'||![100,125,150,200,250,300,400,500].includes(luck))
+    return fail('Ungültiger Luck-Multiplikator');
+   if(typeof duration!=='number'||![1,5,10,15,30,60,120].includes(duration))
+    return fail('Wähle eine gültige Dauer');
+   if(discount===0&&luck===100)return fail('Wähle mindestens einen Rabatt oder einen Luck-Boost');
+   const started=await db.$transaction(async tx=>{
+    const now=new Date();
+    const before=await tx.gameEvent.findUnique({where:{id:EVENT_ID}});
+    if(before&&before.endsAt>now)throw Error('Ein Event läuft bereits. Bitte zuerst beenden.');
+    const end=new Date(now.getTime()+duration*60000);
+    const event=await tx.gameEvent.upsert({where:{id:EVENT_ID},
+     create:{id:EVENT_ID,startsAt:now,endsAt:end,
+      discountPercent:discount,luckMultiplier:luck,createdById:actor.id},
+     update:{startsAt:now,endsAt:end,
+      discountPercent:discount,luckMultiplier:luck,createdById:actor.id}});
+    await log(tx,actor,'START_EVENT','GAME_EVENT',EVENT_ID,{
+     discountPercent:discount,luckMultiplier:luck,durationMinutes:duration,
+     startsAt:now.toISOString(),endsAt:end.toISOString()
+    });
+    return event;
+   },{isolationLevel:'Serializable'});
+   return NextResponse.json({ok:true,event:eventPublic(started)},{headers:noStore});
+  }
+  if(action==='stopEvent'){
+   const stopped=await db.$transaction(async tx=>{
+    const now=new Date();
+    const before=await tx.gameEvent.findUnique({where:{id:EVENT_ID}});
+    if(!before||before.endsAt<=now)throw Error('Es läuft kein Event');
+    const event=await tx.gameEvent.update({where:{id:EVENT_ID},data:{endsAt:now}});
+    await log(tx,actor,'STOP_EVENT','GAME_EVENT',EVENT_ID,{
+     discountPercent:before.discountPercent,luckMultiplier:before.luckMultiplier,
+     scheduledEnd:before.endsAt.toISOString(),stoppedAt:now.toISOString()
+    });
+    return event;
+   },{isolationLevel:'Serializable'});
+   return NextResponse.json({ok:true,event:eventPublic(null),
+    stoppedAt:stopped.endsAt.toISOString()},{headers:noStore});
+  }
   if(action==='grantCoins'){
    const userId=typeof input.userId==='string'?input.userId:'';
    const amount=input.amountCents;
@@ -199,7 +254,7 @@ export async function POST(req:NextRequest){
   if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2034')
    return fail('Gleichzeitige Änderung – bitte erneut versuchen',409);
   const message=e instanceof Error?e.message:'';
-  const expected=['Spieler nicht gefunden','Guthabenlimit überschritten','Nachricht nicht gefunden',
+  const expected=['Ein Event läuft bereits. Bitte zuerst beenden.','Es läuft kein Event','Spieler nicht gefunden','Guthabenlimit überschritten','Nachricht nicht gefunden',
    'Kiste nicht gefunden','Item nicht gefunden','Dieser Skin besitzt keine überprüften Bild- und Wertdaten',
    'Die Kiste muss mindestens einen aktiven Gewinn behalten','Nur die kostenlose Kiste darf gratis sein'];
   console.error('Admin mutation:',e);
