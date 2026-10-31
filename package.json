@@ -12,7 +12,8 @@
     "audit:catalog": "tsx scripts/audit-catalog.ts",
     "test:case-config": "tsx scripts/test-case-config.ts",
     "test:openings": "tsx scripts/test-openings.ts",
-    "test:leaderboard": "tsx scripts/test-leaderboard.ts"
+    "test:leaderboard": "tsx scripts/test-leaderboard.ts",
+    "test:battles-upgrades": "tsx scripts/test-battles-upgrades.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
