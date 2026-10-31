@@ -232,3 +232,38 @@ Integrationstest: `npm run test:social`.
 Für eine große öffentliche Community sollten vor weiterer Skalierung
 ein Melde-/Moderationssystem, strengere Botabwehr und eine langfristige
 Archivierungs-/Löschstrategie ergänzt werden.
+
+## 2v2 Case Battles mit Bots
+
+Im Teamduell (`/battles` → **DUO 2V2**) gibt es jetzt pro unbesetztem
+Teamplatz die Schaltfläche **„+ BOT HINZUFÜGEN“**. Nur der
+Ersteller der offenen Lobby kann Bots hinzufügen oder wieder entfernen.
+Höchstens **zwei Bots** können pro Duo-Battle teilnehmen. Somit sind
+auch zwei echte Spieler in Team A gegen zwei Bots in Team B möglich;
+alternativ kann jedes Team aus einem echten Spieler und einem Bot bestehen.
+
+Jeder Bot bekommt wie ein realer Spieler für jede Kiste einen eigenen
+serverseitigen RNG-Drop. Jede Runde zeigt weiterhin alle **vier**
+horizontalen Rotationsstreifen. Die beiden Drop-Werte jedes Teams
+werden addiert, danach gewinnt das Team mit dem größeren Gesamtwert.
+Bei gleicher Summe entscheidet ein 50/50-Zufallsentscheid.
+
+**Keine Fantasiekonten:** Bot-Sitze werden in `Battle.duoBotSeats`
+gespeichert und erzeugen keine echten Benutzer, Guthabenabbuchungen,
+Öffnungsstatistiken oder menschlichen Inventareinträge. Jedes echte
+Teammitglied zahlt den gewählten Kisteneinsatz. Gewinnt ein Team
+mit echten Spielern, erhält jedes seiner Mitglieder pro Kiste zwei
+Items (seine eigene und die gegenüberliegende Waffe). Bei einem
+reinen Bot-Sieg werden die gewonnenen virtuellen Items nicht
+an Spieler ausgegeben.
+
+Das Battle wird automatisch ausgewertet, sobald alle vier Sitze
+(menschlich oder Bot) belegt sind. Das Hinzufügen, Entfernen und
+Einsteigen erfolgt in serialisierbaren PostgreSQL-Transaktionen;
+gleichzeitige Anfragen können keine doppelt belegten Plätze erzeugen.
+Der Ersteller kann eine noch offene Lobby abbrechen; bereits
+bezahlte **echte** Teilnehmer erhalten ihren Einsatz zurück.
+Der PostgreSQL-Integrationstest `npm run test:trades-duos` enthält
+einen vollständigen Test **2 Menschen gegen 2 Bots**, inklusive
+Sitzsperren, Entfernen und erneuten Hinzufügen von Bots sowie
+Inventarauszahlung und Rückerstattung.
