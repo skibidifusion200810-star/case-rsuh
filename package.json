@@ -16,7 +16,8 @@
     "test:battles-upgrades": "tsx scripts/test-battles-upgrades.ts",
     "test:social": "tsx scripts/test-social.ts",
     "test:trades-duos": "tsx scripts/test-trades-duos.ts",
-    "test:admin": "tsx scripts/test-admin.ts"
+    "test:admin": "tsx scripts/test-admin.ts",
+    "test:events": "tsx scripts/test-events.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

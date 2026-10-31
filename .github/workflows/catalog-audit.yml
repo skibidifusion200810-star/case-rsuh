@@ -51,3 +51,5 @@ jobs:
         run: npm run test:trades-duos
       - name: Test owner-only admin balance grants and moderation
         run: npm run test:admin
+      - name: Test server-side discounts, boosted luck and automatic event expiry
+        run: npm run test:events
