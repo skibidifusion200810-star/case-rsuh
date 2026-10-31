@@ -18,6 +18,8 @@ model User {
   chatMessages ChatMessage[]
   sentGifts GiftTransfer[] @relation("GiftSender")
   receivedGifts GiftTransfer[] @relation("GiftReceiver")
+  sentTrades TradeOffer[] @relation("TradeSender")
+  receivedTrades TradeOffer[] @relation("TradeReceiver")
   createdAt DateTime @default(now())
   sessions Session[]
   inventory InventoryItem[]
@@ -64,9 +66,12 @@ model InventoryItem {
   valueAtDrop Int?
   isDemo Boolean @default(false)
   battleId String?
+  mergedCount Int @default(1)
+  tradeLockId String?
   createdAt DateTime @default(now())
   @@index([ownerId, soldAt, isDemo])
   @@index([battleId, ownerId])
+  @@index([ownerId, tradeLockId, soldAt])
 }
 model Opening {
   id String @id @default(uuid())
@@ -87,10 +92,17 @@ model Battle {
  creatorId String
  guestId String?
  againstBot Boolean @default(false)
+ duo Boolean @default(false)
+ creatorPartnerId String?
+ guestPartnerId String?
  status String @default("WAITING")
  winnerId String?
  creatorItemId String?
  guestItemId String?
+ creatorPartnerItemId String?
+ guestPartnerItemId String?
+ creatorPartnerValue Int?
+ guestPartnerValue Int?
  creatorValue Int?
  guestValue Int?
  createdAt DateTime @default(now())
@@ -148,4 +160,19 @@ model RareDropEvent {
   inventoryItemId String @unique
   createdAt DateTime @default(now())
   @@index([createdAt])
+}
+
+model TradeOffer {
+  id String @id @default(uuid())
+  senderId String
+  sender User @relation("TradeSender",fields:[senderId],references:[id])
+  recipientId String
+  recipient User @relation("TradeReceiver",fields:[recipientId],references:[id])
+  offeredIds String[]
+  requestedIds String[]
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  finishedAt DateTime?
+  @@index([senderId,status,createdAt])
+  @@index([recipientId,status,createdAt])
 }
