@@ -1,0 +1,39 @@
+name: CASE RUSH database + item catalog integrity
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: case_rush
+          POSTGRES_PASSWORD: localtest
+          POSTGRES_DB: case_rush
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U case_rush"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=6
+    env:
+      DATABASE_URL: postgresql://case_rush:localtest@localhost:5432/case_rush?schema=public
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+      - name: Create database schema
+        run: npm run db:push
+      - name: Import exact item variants and check images
+        run: npm run db:seed
+      - name: Audit all active skin images and values
+        run: npm run audit:catalog
