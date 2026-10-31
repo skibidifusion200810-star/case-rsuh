@@ -11,7 +11,7 @@ type Round={
  creatorDrop:Drop|null;guestDrop:Drop|null;creatorPartnerDrop?:Drop|null;guestPartnerDrop?:Drop|null
 };
 type Battle={
- id:string;status:string;againstBot:boolean;duo:boolean;creator:string;guest:string|null;
+ id:string;status:string;againstBot:boolean;duo:boolean;duoBotSeats:string[];creator:string;guest:string|null;
  creatorPartner:string|null;guestPartner:string|null;creatorTeam:(string|null)[];guestTeam:(string|null)[];
  viewerRole:'creator'|'creatorPartner'|'guest'|'guestPartner'|'spectator';winner:'creator'|'guest'|null;
  case:CSCase|null;creatorDrop:Drop|null;guestDrop:Drop|null;
@@ -76,7 +76,7 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
  const displayed=filter==='open'?battles.filter(b=>b.status==='WAITING'&&!b.againstBot):battles;
  function addCase(){if(choice&&selectedIds.length<10)setSelectedIds(prev=>[...prev,choice])}
  function removeCase(at:number){setSelectedIds(prev=>prev.filter((_,i)=>i!==at))}
- async function action(type:'create'|'join'|'cancel',args:Record<string,unknown>){
+ async function action(type:'create'|'join'|'cancel'|'addBot'|'removeBot',args:Record<string,unknown>){
   setLoading(true);setError('');
   try{
    const duo=args.duo===true||args.isDuo===true||typeof args.seat==='string';
@@ -188,13 +188,36 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
      <div><strong>TEAM B</strong><span>{current.guest??'FREIER PLATZ'}</span><span>{current.guestPartner??'FREIER PLATZ'}</span></div>
     </div>}
     {current.status==='WAITING'?<>
-     <p>Dein Einsatz ist reserviert. {current.duo?'Das Battle startet automatisch, sobald alle vier Plätze besetzt sind.':'Sobald ein Gegner beitritt, starten die Animationen automatisch.'} Die Lobby wird alle drei Sekunden aktualisiert.</p>
-     {current.duo&&current.viewerRole==='spectator'&&me&&<div className="duo-join-buttons">
-      {([{seat:'creatorPartnerId',name:'TEAM A · SPIELER 2',free:!current.creatorPartner},
-         {seat:'guestId',name:'TEAM B · SPIELER 1',free:!current.guest},
-         {seat:'guestPartnerId',name:'TEAM B · SPIELER 2',free:!current.guestPartner}] as const)
-        .filter(x=>x.free).map(x=><button key={x.seat} className="primary" disabled={loading||me.coins<current.totalCost}
-          onClick={()=>void action('join',{battleId:current.id,seat:x.seat})}>BEITRETEN · {x.name}</button>)}
+     <p>{current.duo?
+      'Das Battle startet automatisch, sobald alle vier Plätze besetzt sind. Du kannst echte Spieler und bis zu zwei Bots kombinieren. Bots zahlen keine virtuellen Einsätze.':
+      'Sobald ein Gegner beitritt, starten die Animationen automatisch.'} Die Lobby wird alle drei Sekunden aktualisiert.</p>
+     {current.duo&&<div className="duo-seat-controls">
+      <div className="eyebrow">TEAMPLÄTZE · {current.duoBotSeats.length}/2 BOTS</div>
+      {([{seat:'creatorPartnerId',name:'TEAM A · SPIELER 2',username:current.creatorPartner},
+         {seat:'guestId',name:'TEAM B · SPIELER 1',username:current.guest},
+         {seat:'guestPartnerId',name:'TEAM B · SPIELER 2',username:current.guestPartner}] as const)
+        .map(x=>{
+         const bot=current.duoBotSeats.includes(x.seat);
+         const free=!x.username&&!bot;
+         return <div className="duo-seat-control" key={x.seat}>
+          <div><strong>{x.name}</strong><span className={bot?'duo-bot-name':''}>
+           {bot?'🤖 RUSH BOT':x.username??'FREIER PLATZ'}</span></div>
+          <div className="duo-seat-actions">
+           {free&&current.viewerRole==='spectator'&&me&&
+            <button className="primary" disabled={loading||me.coins<current.totalCost}
+             onClick={()=>void action('join',{battleId:current.id,seat:x.seat,isDuo:true})}>BEITRETEN</button>}
+           {free&&current.viewerRole==='creator'&&
+            <button className="duo-add-bot" disabled={loading||current.duoBotSeats.length>=2}
+             onClick={()=>void action('addBot',{battleId:current.id,seat:x.seat,isDuo:true})}>
+             + BOT HINZUFÜGEN</button>}
+           {bot&&current.viewerRole==='creator'&&
+            <button className="duo-remove-bot" disabled={loading}
+             onClick={()=>void action('removeBot',{battleId:current.id,seat:x.seat,isDuo:true})}>
+             BOT ENTFERNEN</button>}
+          </div>
+         </div>;
+        })}
+      <p className="duo-seat-hint">Beispiel: Zwei echte Spieler in Team A und zwei Bots in Team B. Die Bots haben dieselben Drop-Chancen wie die Spieler.</p>
      </div>}
      {current.duo&&current.viewerRole==='creator'&&<button className="secondary wide"
       disabled={loading} onClick={()=>void action('cancel',{battleId:current.id,isDuo:true})}>BATTLE ABBRECHEN · ALLE ERSTATTEN</button>}
