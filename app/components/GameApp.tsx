@@ -173,6 +173,6 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
  {formError&&<div className="auth-error" role="alert">{formError}</div>}
  <button className="primary wide" type="submit" disabled={busy}>{busy?'BITTE WARTEN...':formMode==='register'?'KONTO ERSTELLEN':'ANMELDEN'}</button>
  <button className="secondary wide" type="button" disabled={busy} onClick={()=>{setFormMode(formMode==='login'?'register':'login');setFormError('');setError('')}}>{formMode==='login'?'NOCH KEIN KONTO? REGISTRIEREN':'SCHON REGISTRIERT? ANMELDEN'}</button>
- <p className="auth-info">Neue Konten erhalten 5,00 € virtuelles Startguthaben. Die kostenlose Kiste kann unbegrenzt geöffnet werden und ihre Gewinne sind verkaufbar. Kein Echtgeld.</p>
+ <p className="auth-info">Neue Konten erhalten 1.000,00 € virtuelles Startguthaben. Die kostenlose Kiste kann unbegrenzt geöffnet werden und ihre Gewinne sind verkaufbar. Kein Echtgeld.</p>
  </form>
  </div>}</>}

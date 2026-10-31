@@ -76,7 +76,7 @@ async function main(){
  const list=await get(tradeList,'/api/trades?recipient='+b.username,a.cookie);
  assert.equal(list.status,200);
  assert.ok(list.data.offers.some((o:{id:string})=>o.id===offer.data.offerId));
- const illegalMerge=await call(merge,'/api/merge',{inventoryIds:[copies[0].id,desired.id]},a.cookie);
+ const illegalMerge=await call(merge,'/api/merge',{inventoryIds:[copies[0].id,toCancel.id]},a.cookie);
  assert.equal(illegalMerge.status,400,'Different item variants are not mergeable');
 
  const opening=await call(duo,'/api/duo-battles',{action:'create',caseIds:[testCase.id,testCase.id]},a.cookie);

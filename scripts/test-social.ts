@@ -58,7 +58,7 @@ async function main(){
   assert.equal(first.status,200,'Gift €250 succeeds');
   transferIds.push(first.json.transfer.id);
   assert.equal(first.json.transfer.balance,475000,'Gift deducts from sender');
-  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,25500,'Gift credits recipient');
+  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,125000,'Gift credits recipient');
   const second=await post(socialPost,'/api/social',{action:'gift',recipient:b.username,amountCents:100},a.cookie);
   assert.equal(second.status,429,'Only once per 24 hours');
   const wallet=await get('wallet',a.cookie);
@@ -77,7 +77,7 @@ async function main(){
   if(p.status===200)transferIds.push(p.json.transfer.id);
   if(q.status===200)transferIds.push(q.json.transfer.id);
   assert.equal((await db.user.findUniqueOrThrow({where:{id:a.id}})).coins,474000,'Exactly one debit');
-  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,26500,'Exactly one credit');
+  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,126000,'Exactly one credit');
 
   assert.equal(qualifiesForGlobalDrop({name:'AWP | Dragon Lore',rarity:'LEGENDARY',value:1100000}),true);
   assert.equal(qualifiesForGlobalDrop({name:'P250 | Sand Dune',rarity:'COMMON',value:1}),false);

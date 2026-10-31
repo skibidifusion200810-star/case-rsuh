@@ -9,7 +9,7 @@ model User {
   id String @id @default(uuid())
   username String @unique
   passwordHash String
-  coins Int @default(500)
+  coins Int @default(100000)
   openSlots Int @default(1)
   starterClaimed Boolean @default(false)
   freeLastOpenedAt DateTime?

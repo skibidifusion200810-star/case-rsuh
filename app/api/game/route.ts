@@ -42,7 +42,7 @@ export async function POST(req:NextRequest){
    let u;
    if(action==='register'){
     const existing=await db.user.findUnique({where:{username}});if(existing)return fail('Benutzername schon vergeben',409);
-    u=await db.user.create({data:{username,passwordHash:await argon2.hash(password)}});
+    u=await db.user.create({data:{username,passwordHash:await argon2.hash(password),coins:100000}});
    }else{
     const found=await db.user.findUnique({where:{username}});
     if(!found||!(await argon2.verify(found.passwordHash,password)))return fail('Falsche Zugangsdaten',401);

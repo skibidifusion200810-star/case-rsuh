@@ -32,7 +32,7 @@ async function main(){
  const second=await post('open',{caseId:free.id},cookie);
  assert.equal(second.status,200,'Free case must be usable again indefinitely');
  const player=await db.user.findUniqueOrThrow({where:{username}});
- assert.equal(player.coins,500,'No coins charged for free openings');
+ assert.equal(player.coins,100000,'No coins charged for free openings; new users start with €1000');
  const freeReward=await db.inventoryItem.findUniqueOrThrow({where:{id:first.json.inventoryId}});
  assert.equal(freeReward.isDemo,false,'Free reward must be a normal inventory item');
  const freeSale=await post('sell',{inventoryId:first.json.inventoryId},cookie);
@@ -43,7 +43,7 @@ async function main(){
  const paidOpening=await post('open',{caseId:paid.id},cookie);
  assert.equal(paidOpening.status,200,'Paid case opening should work');
  const playerAfter=await db.user.findUniqueOrThrow({where:{username}});
- assert.equal(playerAfter.coins,500+freeSale.json.value-paid.price,'Paid opening debits correct amount after free sale');
+ assert.equal(playerAfter.coins,100000+freeSale.json.value-paid.price,'Paid opening debits correct amount after free sale');
  const inv=await db.inventoryItem.findUniqueOrThrow({where:{id:paidOpening.json.inventoryId}});
  assert.equal(inv.isDemo,false,'Paid reward is sellable');
  const sold=await post('sell',{inventoryId:inv.id},cookie);
