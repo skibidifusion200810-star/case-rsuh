@@ -12,7 +12,7 @@ async function post(handler:(req:NextRequest)=>Promise<Response>,path:string,bod
  const r=await handler(new NextRequest(url+path,{method:'POST',headers:{
   'content-type':'application/json',...(cookie?{cookie:'cr_session='+cookie}:{})
  },body:JSON.stringify(body)}));
- return {status:r.status,json:await r.json(),cookie:r.cookies.get('cr_session')?.value};
+ return {status:r.status,json:await r.json(),cookie:r.headers.get('set-cookie')?.match(/cr_session=([^;]+)/)?.[1]};
 }
 async function get(feed:string,cookie?:string){
  const r=await socialGet(new NextRequest(url+'/api/social?feed='+feed,{
