@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 
 type RareDrop={id:string;username:string;itemName:string;rarity:string;value:number;imageUrl?:string|null;createdAt:string;source:string};
@@ -96,7 +96,7 @@ export default function GlobalSocial(){
   return()=>clearInterval(id);
  },[open,tab]);
  useEffect(()=>{if(open&&tab==='chat')chatEnd.current?.scrollIntoView({block:'end',behavior:'smooth'})},[messages.length,open,tab]);
- async function sendChat(e:React.FormEvent<HTMLFormElement>){
+ async function sendChat(e:FormEvent<HTMLFormElement>){
   e.preventDefault();
   if(chatSending)return;
   const msg=chatText.trim();
@@ -112,7 +112,7 @@ export default function GlobalSocial(){
   }catch(e){setChatError(e instanceof Error?e.message:'Nachricht fehlgeschlagen')}
   finally{setChatSending(false)}
  }
- async function sendGift(e:React.FormEvent<HTMLFormElement>){
+ async function sendGift(e:FormEvent<HTMLFormElement>){
   e.preventDefault();
   if(giftSending)return;
   const amountCents=parseEuroAmount(amount);
