@@ -93,6 +93,7 @@ model Battle {
  guestId String?
  againstBot Boolean @default(false)
  duo Boolean @default(false)
+ duoBotSeats String[] @default([])
  creatorPartnerId String?
  guestPartnerId String?
  status String @default("WAITING")
