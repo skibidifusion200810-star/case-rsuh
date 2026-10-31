@@ -95,5 +95,12 @@ export async function POST(req:NextRequest){
    return NextResponse.json(result);
   }
   return fail('Unbekannte Aktion',404);
- }catch(e){console.error('CASE RUSH API:',e);return fail(e instanceof Error?e.message:'Serverfehler',400)}
+ }catch(e){
+  console.error('CASE RUSH API:',e);
+  const message=e instanceof Error?e.message:'';
+  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft')return fail(message);
+  if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2002')return fail('Dieser Benutzername ist bereits vergeben',409);
+  if(typeof e==='object'&&e!==null&&'code' in e&&String(e.code).startsWith('P10'))return fail('Datenbank momentan nicht erreichbar. Bitte später erneut versuchen.',503);
+  return fail('Aktion fehlgeschlagen. Bitte prüfe die Eingaben und probiere es erneut.',500);
+ }
 }

@@ -28,6 +28,7 @@ model Case {
   slug String @unique
   name String
   price Int
+  imageUrl String?
   items Item[]
   openings Opening[]
 }
@@ -37,6 +38,9 @@ model Item {
   rarity String
   value Int
   weight Int
+  imageUrl String?
+  priceOrigin String @default("GAME")
+  marketHashName String?
   caseId String
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   inventory InventoryItem[]
