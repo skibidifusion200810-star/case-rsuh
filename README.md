@@ -186,3 +186,49 @@ CASE RUSH übernimmt keine fremden Grafiken und keine realen Ein-/Auszahlungen. 
 Kostenlose Öffnungen behalten ihr eigenes Dropgewichts-Schema und Gold-Chance (0,0001 %). Die ersten fünf Kisten enthalten einen anhand eines 29.10.2026-Preissnapshots dokumentierten Skin um 1 € (`Tec-9 | Re-Entry (Field-Tested)`). Cent-Skins gibt es ausschließlich in den ersten zwei Kisten. Die 2.000-€-Kiste enthält keine grauen/blauen Items und einen seltenen Dragon-Lore-Hauptgewinn.
 
 Diese Werte sind **keine aktuellen CS.MONEY-Handelspreise oder Gewinnauszahlungen in echten Euro**, sondern virtuelle Wertreferenzen, die sich nur bei dokumentierten Datenbank-Updates verändern. Die aktuelle RTP-Auswertung erscheint im Deploy-Log als `[BALANCE]`; die tatsächlichen Drop-Chancen werden aus den danach gespeicherten Itemgewichten berechnet. Bei fehlenden Marktdaten können sich verfügbare Items und tatsächliche Chancen ändern.
+
+## Community: Global-Drop-Alarm, Chat und Guthaben verschenken
+
+**Globaler Drop-Alarm:** Wird bei einer Kistenöffnung oder einem Battle-Gewinn
+ein Gegenstand mit mindestens **1.000 virtuellen Euro** gezogen, der zudem
+ein Messer, ein Legendary-Skin oder eine Dragon Lore ist, entsteht ein
+`RareDropEvent`. Nur diese außergewöhnlichen Drops erscheinen für etwa
+14 Sekunden im goldenen globalen Hinweisstreifen oben. Der Ereigniseintrag
+enthält Benutzername, Waffenname, virtuellen Wert und ein optionales Bild.
+Die Daten bleiben in PostgreSQL gespeichert; die Oberfläche aktualisiert
+die Ereignisse alle fünf Sekunden. Der Alarm bezieht sich auf serverseitig
+bereits entschiedene und gebuchte Gewinne.
+
+**Öffentlicher Community-Chat:** Über LIVE CHAT oben oder den Chat-Button
+unten rechts ist der globale Chat von jeder Unterseite aus erreichbar.
+Angemeldete Spieler können Textnachrichten mit maximal **280 Zeichen**
+schreiben, mindestens drei Sekunden Abstand. Die letzten 50 Nachrichten
+werden für alle Besucher aus PostgreSQL abgerufen und im geöffneten
+Chat alle 2,5 Sekunden aktualisiert. Es handelt sich um **kurzintervallige
+Live-Aktualisierung**, nicht um eine garantiert sofortige WebSocket-Zustellung.
+Nachrichten werden im Browser als reiner Text angezeigt.
+
+**Virtuelles Geld senden:** Der zweite Tab desselben Community-Panels
+erlaubt Überweisungen an einen registrierten Benutzernamen, ab 0,01 €
+bis maximal **2.000 € virtuellem Guthaben pro Transfer**.
+Es ist genau **eine Überweisung alle 24 Stunden pro Absender** zulässig.
+Ein Empfänger muss existieren und darf nicht der Absender selbst sein.
+Abbuchung beim Sender, Gutschrift beim Empfänger, das Aktualisieren des
+24-Stunden-Zeitstempels und die Buchung in `GiftTransfer` erfolgen
+atomar als PostgreSQL-Transaktion mit Serializable-Isolation.
+Das verhindert doppelte Abbuchungen, Überweisungen ohne Deckung und
+gleichzeitiges Umgehen der Sperre. Die letzten fünf Sendungen und die
+nächste erlaubte Sendezeit werden im Panel angezeigt. Geschenkte virtuelle
+Euro können nicht in Echtgeld umgetauscht oder ausgezahlt werden.
+
+Server-API:
+`GET /api/social?feed=drops|chat|wallet`;
+`POST /api/social` mit `action=chat|gift` (Cookie-Login erforderlich).
+Die Social-Datenbanktabellen werden bei Render mit `npm run db:push`
+automatisch angelegt. Der Docker-Start verwendet bereits
+`npm run db:push && npm run db:seed && npm run start:production`.
+Integrationstest: `npm run test:social`.
+
+Für eine große öffentliche Community sollten vor weiterer Skalierung
+ein Melde-/Moderationssystem, strengere Botabwehr und eine langfristige
+Archivierungs-/Löschstrategie ergänzt werden.
