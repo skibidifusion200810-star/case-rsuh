@@ -43,3 +43,10 @@
 .practice-note{display:block;color:#efc584;font-size:12px;line-height:1.45}
 @media(max-width:650px){.reel-actions{flex-direction:column;text-align:center}.reel-viewport{height:205px}.reel-modal{padding:25px 0}}
 @media(prefers-reduced-motion:reduce){.reel-track{transition:none!important}}
+
+/* Prices under each weapon remain visible throughout the reel animation. */
+.reel-tile{justify-content:flex-start;padding-top:10px;gap:4px}
+.reel-tile img,.reel-no-image{height:89px;flex-shrink:0}
+.reel-tile strong{min-height:29px;max-height:29px;font-size:10.5px}
+.reel-item-value{display:block;margin-top:auto;font-size:13px;color:#ffbf59;font-weight:900;white-space:nowrap;line-height:1.35;font-variant-numeric:tabular-nums}
+.reel-item-value small{font-size:9px;font-weight:500;color:#a9b3c4}

@@ -31,6 +31,12 @@ for(const c of caseDefs){
   (premium*100).toFixed(3)+'% Epic+');
 }
 const free=caseDefs[0];
+const freeGold=free.items.filter(item=>item.rarity==='KNIFE');
+assert.equal(freeGold.length,1,'First Drop contains exactly one golden knife');
+assert.equal(freeGold[0].name,'Karambit | Doppler');
+assert.equal(freeGold[0].weight,1,'The free gold knife must be one weight out of 1,000,000');
+assert.equal(freeGold[0].weight/free.items.reduce((sum,item)=>sum+item.weight,0),1/1_000_000,
+ 'Gold knife chance must be 1 in 1,000,000 (0.0001%)');
 const freeRare=free.items.filter(x=>['RARE','EPIC','LEGENDARY','KNIFE'].includes(x.rarity))
  .reduce((a,b)=>a+b.weight,0)/1_000_000;
 assert.ok(freeRare<=0.001,'Free case must have <=0.1% chance for Rare+');

@@ -11,13 +11,14 @@ const pool=(items:Array<[string,PoolEntry['rarity'],number]>):PoolEntry[]=>
   items.map(([name,rarity,weight])=>({name,rarity,weight}));
 export const caseDefs:readonly CaseDefinition[]=[
  {slug:'first-drop',name:'First Drop',price:0,image:'Kilowatt Case',items:pool([
-  ['USP-S | Cortex',COMMON,480000],
+  ['USP-S | Cortex',COMMON,479999],
   ['MAC-10 | Disco Tech',COMMON,340000],
   ['Five-SeveN | Monkey Business',COMMON,130000],
   ['Glock-18 | Water Elemental',BLUE,30000],
   ['P90 | Asiimov',BLUE,19500],
   ['AK-47 | Neon Rider',RARE,400],
-  ['AWP | Asiimov',EPIC,100]
+  ['AWP | Asiimov',EPIC,100],
+  ['Karambit | Doppler',KNIFE,1]
  ])},
  {slug:'urban-supply',name:'Urban Supply',price:100,image:'Recoil Case',items:pool([
   ['USP-S | Cortex',COMMON,3900],
