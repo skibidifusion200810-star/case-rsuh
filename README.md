@@ -140,8 +140,8 @@ Cent-Gewinne von 0,01–0,02 € gibt es nur in der **kostenlosen und der
 mehr. Die 75-€-Kiste hat keinen ein- oder zweicentigen Gewinn.
 
 Die **2.000-€-Karambit-Eclipse-Kiste** enthält als extrem seltenen Jackpot
-auch die **AWP | Dragon Lore (Factory New)** mit 0,5 % konfiguriertem
-Grundgewicht. Der Referenzpreis von **11.501,06 €** wurde als
+auch die **AWP | Dragon Lore (Factory New)** mit 4,0 % konfiguriertem
+Grundgewicht (vor der marktwertabhängigen Gewichtsanpassung). Der Referenzpreis von **11.501,06 €** wurde als
 CS.MONEY-Angebot aus [FragStash](https://fragstash.com/catalog/awp/dragon-lore/)
 übernommen. Das ist ein **Angebots-Snapshot**, kein garantiert aktueller
 Verkaufswert oder Echtgeld-Auszahlungsversprechen. Der Spielwert bleibt
