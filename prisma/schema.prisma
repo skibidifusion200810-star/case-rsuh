@@ -57,6 +57,7 @@ model InventoryItem {
   valueAtDrop Int?
   isDemo Boolean @default(false)
   createdAt DateTime @default(now())
+  @@index([ownerId, soldAt, isDemo])
 }
 model Opening {
   id String @id @default(uuid())
@@ -66,4 +67,5 @@ model Opening {
   case Case @relation(fields: [caseId], references: [id])
   itemId String
   boughtAt DateTime @default(now())
+  @@index([userId])
 }
