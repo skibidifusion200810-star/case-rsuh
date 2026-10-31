@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
 import {socialViewer,qualifiesForGlobalDrop} from '@/lib/social';
+import {getLiveEvent,eventPrice,eventWeight,type LiveEvent} from '@/lib/events';
 import {randomInt} from 'node:crypto';
 import type {Item,Prisma} from '@prisma/client';
 
@@ -11,8 +12,9 @@ const seats:Seat[]=['creatorPartnerId','guestId','guestPartnerId'];
 type Duo=Prisma.BattleGetPayload<{include:{rounds:true}}>;
 const occupied=(battle:Duo,seat:Seat)=>!!battle[seat]||battle.duoBotSeats.includes(seat);
 const hasAllSeats=(battle:Duo)=>seats.every(seat=>occupied(battle,seat));
-function draw(items:Item[]){
- const available=items.filter(item=>item.weight>0&&item.value>=1&&!!item.imageUrl);
+function draw(items:Item[],basePrice:number,event:LiveEvent|null){
+ const available=items.filter(item=>item.weight>0&&item.value>=1&&!!item.imageUrl)
+  .map(i=>({...i,weight:eventWeight(i,basePrice,event)}));
  const total=available.reduce((sum,item)=>sum+item.weight,0);
  if(total<=0)throw Error('Kiste ohne verfügbare Items');
  let roll=randomInt(total);
@@ -36,10 +38,11 @@ async function settleIfFull(tx:Prisma.TransactionClient,battleId:string){
   where:{id:{in:[...new Set(rounds.map(r=>r.caseId))]}},include:{items:true}
  });
  const catalogById=new Map(catalog.map(c=>[c.id,c]));
+ const event=await getLiveEvent(tx);
  const results=rounds.map(round=>{
   const c=catalogById.get(round.caseId);
   if(!c)throw Error('Kiste fehlt');
-  return {round,draws:[draw(c.items),draw(c.items),draw(c.items),draw(c.items)]};
+  return {round,draws:[draw(c.items,c.price,event),draw(c.items,c.price,event),draw(c.items,c.price,event),draw(c.items,c.price,event)]};
  });
  const totalA=results.reduce((sum,r)=>sum+r.draws[0].value+r.draws[1].value,0);
  const totalB=results.reduce((sum,r)=>sum+r.draws[2].value+r.draws[3].value,0);
@@ -123,7 +126,8 @@ export async function POST(req:NextRequest){
     if(ordered.some(c=>!c||c.price<=0||
      c.items.filter(i=>i.weight>0&&i.imageUrl&&i.value>0).length<2))
      throw Error('Mindestens eine Kiste ist nicht verfügbar');
-    const totalCost=ordered.reduce((sum,c)=>sum+c!.price,0);
+    const event=await getLiveEvent(tx);
+    const totalCost=ordered.reduce((sum,c)=>sum+eventPrice(c!.price,event),0);
     if(!Number.isSafeInteger(totalCost)||totalCost<=0)throw Error('Ungültiger Preis');
     if(await tx.battle.count({where:{creatorId:user.id,status:'WAITING'}})>=3)
      throw Error('Du hast bereits drei offene Battles');
@@ -133,7 +137,7 @@ export async function POST(req:NextRequest){
     if(debit.count!==1)throw Error('Nicht genügend Guthaben');
     const battle=await tx.battle.create({data:{
      creatorId:user.id,caseId:ordered[0]!.id,totalCost,duo:true,againstBot:false,
-     rounds:{create:ordered.map((c,index)=>({position:index,caseId:c!.id,casePrice:c!.price}))}
+     rounds:{create:ordered.map((c,index)=>({position:index,caseId:c!.id,casePrice:eventPrice(c!.price,event)}))}
     }});
     return {id:battle.id,status:'WAITING',finished:false,totalCost};
    },{isolationLevel:'Serializable'});
