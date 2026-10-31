@@ -33,6 +33,19 @@ for(const c of caseDefs){
  console.log(c.name, (c.price/100).toFixed(2)+' EUR', c.items.length+' items',
   (premium*100).toFixed(3)+'% Epic+');
 }
+const vault=caseDefs.find(c=>c.slug==='butterfly-vault')!;
+assert.equal(vault.items.length,7,'Butterfly Vault must have a deliberately curated pool');
+assert.ok(vault.items.filter(i=>i.rarity==='KNIFE').length===2,'Two butterfly knife jackpots');
+assert.ok(vault.items.filter(i=>i.rarity==='KNIFE').every(i=>i.name.startsWith('Butterfly Knife | ')));
+assert.ok(vault.items.every(i=>!['AWP | Asiimov','AK-47 | Redline'].includes(i.name)),
+ 'A €1,000 case must not give out €150–€190 skins');
+assert.equal(vault.items.reduce((sum,i)=>sum+i.weight,0),10000);
+const first=caseDefs[0],second=caseDefs[1];
+assert.ok(first.items.some(i=>i.name==='M4A1-S | Decimator'), 'Free case has a rare ~€10 skin');
+assert.ok(second.items.some(i=>i.name==='AWP | Corticera'), 'Second case has a rare ~€20 skin');
+assert.ok(!second.items.some(i=>i.name==='AWP | Asiimov'), 'Second case excludes costly €100+ guns');
+assert.equal(first.items.find(i=>i.name==='M4A1-S | Decimator')?.weight,49);
+assert.equal(second.items.find(i=>i.name==='AWP | Corticera')?.weight,50);
 const free=caseDefs[0];
 const freeGold=free.items.filter(item=>item.rarity==='KNIFE');
 assert.equal(freeGold.length,1,'First Drop contains exactly one golden knife');

@@ -10,6 +10,12 @@ async function main(){
   if(!active.length)console.warn('NO ELIGIBLE ITEMS',c.name);
   if(c.price>100&&active.some(i=>i.value<=2)){invalid++;console.error('Cheap €0.01/€0.02 item in expensive case',c.name)}
   if(c.price===200000&&!active.some(i=>i.value>c.price)){invalid++;console.error('No profitable jackpot in €2000 case')}
+  if(c.price===100000){
+   if(active.filter(i=>i.rarity==='KNIFE'&&i.name.includes('Butterfly Knife')).length<2){invalid++;console.error('Butterfly Vault requires two available butterfly knife jackpots')}
+   if(active.some(i=>i.value<35000)){invalid++;console.error('Butterfly Vault includes an extremely low-value prize')}
+   const profit=active.filter(i=>i.value>c.price).reduce((sum,i)=>sum+i.weight,0)/active.reduce((sum,i)=>sum+i.weight,0);
+   if(profit>0.1){invalid++;console.error('Butterfly Vault jackpot chance exceeds 10%')}
+  }
   for(const item of active){
    total++;
    if(item.priceOrigin==='CSMONEY_TRADE')csmoney++;

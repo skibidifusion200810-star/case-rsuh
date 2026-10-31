@@ -10,23 +10,24 @@ const pool=(entries:Array<[string,Rarity,number]>):PoolEntry[]=>
  entries.map(([name,rarity,weight])=>({name,rarity,weight}));
 export const caseDefs:readonly CaseDefinition[]=[
  {slug:'first-drop',name:'First Drop',price:0,image:'Kilowatt Case',items:pool([
-  ['P250 | Sand Dune',COMMON,478999],
+  ['P250 | Sand Dune',COMMON,478500],
   ['MP9 | Sand Dashed',COMMON,340000],
   ['SCAR-20 | Sand Mesh',COMMON,160000],
   ['MP7 | Army Recon',COMMON,19500],
-  ['Tec-9 | Re-Entry',BLUE,1000],
-  ['AK-47 | Neon Rider',RARE,400],
-  ['AWP | Asiimov',EPIC,100],
+  ['Tec-9 | Re-Entry',BLUE,1700],
+  ['USP-S | Cortex',RARE,250],
+  ['M4A1-S | Decimator',EPIC,49],
   ['Karambit | Doppler',KNIFE,1]
  ])},
  {slug:'urban-supply',name:'Urban Supply',price:100,image:'Recoil Case',items:pool([
-  ['P250 | Sand Dune',COMMON,2300],
-  ['MP9 | Sand Dashed',COMMON,3200],
-  ['SCAR-20 | Sand Mesh',COMMON,2700],
-  ['MP7 | Army Recon',COMMON,250],
-  ['Tec-9 | Re-Entry',BLUE,1500],
-  ['Glock-18 | Water Elemental',RARE,45],
-  ['AWP | Asiimov',EPIC,5]
+  ['P250 | Sand Dune',COMMON,2150],
+  ['MP9 | Sand Dashed',COMMON,3150],
+  ['SCAR-20 | Sand Mesh',COMMON,2600],
+  ['MP7 | Army Recon',COMMON,200],
+  ['Tec-9 | Re-Entry',BLUE,1530],
+  ['USP-S | Cortex',RARE,200],
+  ['M4A1-S | Decimator',EPIC,120],
+  ['AWP | Corticera',EPIC,50]
  ])},
  {slug:'neon-circuit',name:'Neon Circuit',price:500,image:'Revolution Case',items:pool([
   ['Tec-9 | Re-Entry',BLUE,7000],
@@ -79,15 +80,15 @@ export const caseDefs:readonly CaseDefinition[]=[
   ['Butterfly Knife | Tiger Tooth',KNIFE,100]
  ])},
  {slug:'butterfly-vault',name:'Butterfly Vault',price:100000,image:'Gamma 2 Case',items:pool([
-  ['AK-47 | Redline',RARE,1000],
-  ['M4A1-S | Hyper Beast',RARE,800],
-  ['AWP | Asiimov',EPIC,2100],
-  ['AK-47 | Vulcan',EPIC,2000],
-  ['AWP | Containment Breach',EPIC,1400],
-  ['Desert Eagle | Blaze',RED,1400],
-  ['M4A1-S | Printstream',RED,700],
-  ['Butterfly Knife | Tiger Tooth',KNIFE,450],
-  ['Butterfly Knife | Fade',KNIFE,150]
+  // The everyday results are meaningful high-tier skins, not €150 weapons.
+  ['M4A1-S | Hyper Beast',RARE,1000],
+  ['M4A1-S | Printstream',RED,1900],
+  ['AWP | Containment Breach',EPIC,2800],
+  ['Desert Eagle | Blaze',RED,3600],
+  // A profit is possible but must remain rare.
+  ['AK-47 | Vulcan',EPIC,500],
+  ['Butterfly Knife | Tiger Tooth',KNIFE,150],
+  ['Butterfly Knife | Fade',KNIFE,50]
  ])},
  {slug:'karambit-eclipse',name:'Karambit Eclipse',price:200000,image:'Dreams & Nightmares Case',items:pool([
   ['M4A1-S | Hyper Beast',RARE,350],

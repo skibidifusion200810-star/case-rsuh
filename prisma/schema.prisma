@@ -44,6 +44,7 @@ model Item {
   priceOrigin String @default("GAME")
   marketHashName String?
   priceCheckedAt DateTime?
+  priceSourceUrl String?
   caseId String
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   inventory InventoryItem[]

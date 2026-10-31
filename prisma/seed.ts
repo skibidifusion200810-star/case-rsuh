@@ -104,7 +104,8 @@ async function main(){
     // Never rewrite item values held in inventories; purchase/award amounts stay fixed.
     await db.item.update({where:{id:existing.id},data:{
      imageUrl,weight:item.weight,rarity:item.rarity,value,priceOrigin:source,marketHashName:exactHash,
-     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
+     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null),
+     priceSourceUrl:quote?null:reference?.sourceUrl??null
     }});
    }else{
     await db.item.create({data:{
@@ -113,7 +114,8 @@ async function main(){
      value,
      priceOrigin:source,
      marketHashName:exactHash,
-     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
+     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null),
+     priceSourceUrl:quote?null:reference?.sourceUrl??null
     }});
    }
    imported++;verified++;

@@ -6,6 +6,22 @@
  */
 export type ReferenceQuote={wear:'Field-Tested'|'Factory New';eurCents:number;observedAt:string;provider:string;sourceUrl:string};
 export const verifiedReferenceQuotes:Record<string,ReferenceQuote>={
+ 'USP-S | Cortex':{
+  wear:'Field-Tested',eurCents:307,observedAt:'2026-10-29T06:55:00+01:00',
+  provider:'CS.MONEY listings compared by Veriloot',
+  sourceUrl:'https://veriloot.gg/en/skins/usp-s/cortex/field-tested'
+ },
+ 'M4A1-S | Decimator':{
+  wear:'Field-Tested',eurCents:950,observedAt:'2026-10-29T07:55:00+01:00',
+  provider:'CS.MONEY listings compared by Veriloot',
+  sourceUrl:'https://veriloot.gg/en/skins/m4a1-s/decimator/field-tested'
+ },
+ 'AWP | Corticera':{
+  wear:'Field-Tested',eurCents:1635,observedAt:'2026-10-29T06:55:00+01:00',
+  provider:'CS.MONEY listings compared by Veriloot',
+  sourceUrl:'https://veriloot.gg/en/skins/awp/corticera/field-tested'
+ },
+
  'Tec-9 | Re-Entry':{
   wear:'Field-Tested',eurCents:99,observedAt:'2026-10-29T07:30:00+01:00',
   provider:'CS.MONEY listing via Veriloot',
@@ -20,6 +36,11 @@ export const verifiedReferenceQuotes:Record<string,ReferenceQuote>={
   wear:'Field-Tested',eurCents:49,observedAt:'2026-10-29T07:30:00+01:00',
   provider:'CS.MONEY listing via Veriloot',
   sourceUrl:'https://veriloot.gg/en/skins/galil-ar/black-sand/field-tested'
+ },
+ 'Butterfly Knife | Fade':{
+  wear:'Factory New',eurCents:183541,observedAt:'2026-10-01',
+  provider:'SkinScanner-Marktvergleich, Tradeit-Listing (kein CS.MONEY-Preis)',
+  sourceUrl:'https://skinscanner.gg/item/butterfly-knife-fade/butterfly-knife-fade-factory-new'
  },
  'AWP | Dragon Lore':{
   wear:'Factory New',eurCents:1150106,observedAt:'2026-11-01T00:00:00+01:00',

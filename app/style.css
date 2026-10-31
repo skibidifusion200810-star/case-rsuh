@@ -228,3 +228,34 @@ header.top nav{flex-wrap:wrap;justify-content:center}
  .battle-selected-name{font-size:11px}
  .battle-total strong{font-size:21px}
 }
+
+/* Readable, independently sourced case-contents breakdown */
+.detail{width:min(94vw,810px);max-height:92vh;overflow-y:auto}
+.detail .drop-explainer{font-size:12px;margin:8px 0 18px;line-height:1.5}
+.detail .drop-head{display:grid;grid-template-columns:minmax(0,1fr) 126px 95px;gap:12px;padding:10px 8px;color:#a4adbd;border-bottom:1px solid #414a58;font-size:10px;font-weight:900;letter-spacing:1px}
+.detail .drop-head span:not(:first-child){text-align:right}
+.detail .drop{display:grid;grid-template-columns:minmax(0,1fr) 126px 95px;grid-template-rows:auto auto;align-items:center;column-gap:12px;row-gap:4px;padding:12px 8px;border-bottom:1px solid #394250;font-size:13px}
+.detail .drop-title{display:flex;align-items:center;gap:12px;min-width:0;max-width:none}
+.detail .drop-title strong{font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.detail .drop-title .art-item{width:94px;height:55px;flex:0 0 94px;margin:0;object-fit:contain}
+.detail .drop-price,.detail .drop-odds{align-self:center;text-align:right;white-space:nowrap;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
+.detail .drop-odds{color:#ffbb51}
+.detail .drop-source{grid-column:1/-1;padding-left:106px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;color:#8e9aaf;font-size:10px}
+.detail .drop-source a{color:#ffbf58;text-underline-offset:3px}
+.detail .drop-source a:hover{color:#ffd68e}
+@media(max-width:600px){
+ .detail{width:96vw;padding:25px 14px}
+ .detail .drop-head,.detail .drop{grid-template-columns:minmax(0,1fr) 92px 63px;gap:6px}
+ .detail .drop-title{gap:6px}
+ .detail .drop-title .art-item{width:55px;flex-basis:55px;height:46px}
+ .detail .drop-title strong{font-size:11px}
+ .detail .drop-price,.detail .drop-odds{font-size:11px}
+ .detail .drop-source{padding-left:61px;font-size:10px}
+ .detail .drop-head{font-size:9px}
+}
+
+/* One-click repeat opening reuses the previously purchased case count. */
+.modal .reopen{margin:15px 0 8px;background:#ffbf53;color:#191b20;white-space:normal;line-height:1.4}
+.modal .reopen:hover{background:#ffd285}
+.modal .reopen:disabled{opacity:.4}
+.multi-modal .multi-result{min-width:0}
