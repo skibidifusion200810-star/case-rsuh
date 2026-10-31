@@ -2,7 +2,6 @@ import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
 import {randomBytes,createHash,randomInt} from 'node:crypto';
 import argon2 from 'argon2';
-import {z} from 'zod';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 async function user(req:NextRequest){
@@ -29,12 +28,15 @@ export async function GET(req:NextRequest){
 }
 export async function POST(req:NextRequest){
  try{
-  const b=await req.json();
-  const action=z.string().parse(b.action);
+  const raw=await req.json();
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw))return fail('Ungültige Anfrage');
+  const b=raw as Record<string,unknown>;
+  const action=typeof b.action==='string'?b.action:'';
+  if(!action)return fail('Aktion fehlt');
   if(action==='register'||action==='login'){
-   const input=z.object({username:z.string().regex(/^[a-zA-Z0-9_]{3,24}$/),password:z.string().min(10).max(128)}).safeParse(b);
-   if(!input.success)return fail('Benutzername 3–24 Zeichen; Passwort mindestens 10 Zeichen');
-   const {username,password}=input.data;
+   const username=typeof b.username==='string'?b.username:'';
+   const password=typeof b.password==='string'?b.password:'';
+   if(!/^[a-zA-Z0-9_]{3,24}$/.test(username)||password.length<10||password.length>128)return fail('Benutzername 3–24 Zeichen; Passwort mindestens 10 Zeichen');
    let u;
    if(action==='register'){
     const existing=await db.user.findUnique({where:{username}});if(existing)return fail('Benutzername schon vergeben',409);
@@ -57,7 +59,8 @@ export async function POST(req:NextRequest){
   }
   const u=await user(req);if(!u)return fail('Bitte anmelden',401);
   if(action==='open'){
-   const caseId=z.string().parse(b.caseId);
+   const caseId=typeof b.caseId==='string'?b.caseId:'';
+   if(!caseId)return fail('Ungültige Kiste');
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
@@ -79,7 +82,8 @@ export async function POST(req:NextRequest){
    return NextResponse.json({...opened,coins:(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins});
   }
   if(action==='sell'){
-   const inventoryId=z.string().parse(b.inventoryId);
+   const inventoryId=typeof b.inventoryId==='string'?b.inventoryId:'';
+   if(!inventoryId)return fail('Ungültiges Inventar-Item');
    const result=await db.$transaction(async tx=>{
     const inv=await tx.inventoryItem.findUnique({where:{id:inventoryId},include:{item:true}});
     if(!inv||inv.ownerId!==u.id||inv.soldAt)throw new Error('Item nicht verfügbar');
