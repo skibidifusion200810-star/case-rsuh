@@ -45,6 +45,17 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
   return()=>window.removeEventListener('case-rush-show-inventory',showInventory);
  },[]);
  useEffect(()=>{if(tab==='inventory')void refresh()},[tab]);
+ useEffect(()=>{
+  const updated=()=>{void refresh()};
+  window.addEventListener('cr-balance-changed',updated);
+  const interval=window.setInterval(async()=>{
+   try{
+    const response=await fetch('/api/game?action=me',{cache:'no-store'});
+    if(response.ok){const data=await response.json();setMe(data.user)}
+   }catch{/* Keep last known balance while temporarily offline */}
+  },15000);
+  return()=>{window.removeEventListener('cr-balance-changed',updated);window.clearInterval(interval)};
+ },[]);
  async function act(action:string,other:Record<string,unknown>={}){setBusy(true);setError('');setFormError('');try{const r=await fetch('/api/game',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...other})});const j=await r.json().catch(()=>({error:'Server noch nicht erreichbar. Bitte später erneut versuchen.'}));if(!r.ok)throw Error(j.error||'Serverfehler ('+r.status+')');await refresh();return j}catch(e){const message=e instanceof Error?e.message:String(e);setError(message);setFormError(message);return null}finally{setBusy(false)}}
  async function open(c:Case,requestedCount?:number){
   if(!me){setFormMode('login');setFormError('');setLogin(true);return}
