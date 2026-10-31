@@ -3,7 +3,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 type Weapon={id?:string;name?:string;rarity?:string;value:number;weight?:number;imageUrl?:string|null};
 export type BattleRoundVisual={
  case:{id:string;name:string;price:number;imageUrl?:string|null}|null;
- creatorDrop:Weapon|null;guestDrop:Weapon|null;position:number;pool?:Weapon[]
+ creatorDrop:Weapon|null;guestDrop:Weapon|null;creatorPartnerDrop?:Weapon|null;guestPartnerDrop?:Weapon|null;position:number;pool?:Weapon[]
 };
 const euro=(n:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n/100);
 const colors:Record<string,string>={COMMON:'#a4acb8',UNCOMMON:'#4aa8fc',RARE:'#a879ff',EPIC:'#ee6dd9',LEGENDARY:'#ff5c68',KNIFE:'#ffc253'};
@@ -63,7 +63,7 @@ function SpinLane({winner,pool,name,onDone}:{
 }
 export default function BattleOpeningAnimation({rounds,participants,onFinish}:{
  rounds:BattleRoundVisual[];
- participants:{creator:string;guest:string};
+ participants:{creator:string;guest:string;creatorPartner?:string|null;guestPartner?:string|null};
  onFinish:()=>void
 }){
  const [index,setIndex]=useState(0);
@@ -75,7 +75,9 @@ export default function BattleOpeningAnimation({rounds,participants,onFinish}:{
   const key=index+':'+role;
   if(completed.current.has(key))return;
   completed.current.add(key);
-  if(completed.current.has(index+':creator')&&completed.current.has(index+':guest')){
+  const expected=current.creatorPartnerDrop&&current.guestPartnerDrop?
+   ['creator','creatorPartner','guest','guestPartner']:['creator','guest'];
+  if(expected.every(seat=>completed.current.has(index+':'+seat))){
    if(index+1<rounds.length)setIndex(i=>i+1);
    else end.current();
   }
@@ -87,12 +89,16 @@ export default function BattleOpeningAnimation({rounds,participants,onFinish}:{
   <section className="battle-spin-modal" aria-label="Case Battle Rotationsanimation" role="dialog" aria-modal="true">
    <div className="eyebrow">CASE RUSH · BATTLE OPENING</div>
    <h2>RUNDE {index+1} <em>/ {rounds.length}</em></h2>
-   <p>{current.case?.name??'Kiste'} · beide Spieler öffnen dieselbe Kiste</p>
+   <p>{current.case?.name??'Kiste'} · {current.creatorPartnerDrop?'Team A gegen Team B – vier Spieler öffnen':'beide Spieler öffnen'} dieselbe Kiste</p>
    <div className="battle-spin-pair">
     <SpinLane key={index+'-creator'} winner={current.creatorDrop} pool={pool} name={participants.creator}
      onDone={()=>mark('creator')}/>
+    {current.creatorPartnerDrop&&<SpinLane key={index+'-creatorPartner'} winner={current.creatorPartnerDrop} pool={pool}
+     name={participants.creatorPartner??'Team A · 2'} onDone={()=>mark('creatorPartner')}/>}
     <SpinLane key={index+'-guest'} winner={current.guestDrop} pool={pool} name={participants.guest}
      onDone={()=>mark('guest')}/>
+    {current.guestPartnerDrop&&<SpinLane key={index+'-guestPartner'} winner={current.guestPartnerDrop} pool={pool}
+     name={participants.guestPartner??'Team B · 2'} onDone={()=>mark('guestPartner')}/>}
    </div>
    <div className="battle-spin-foot">
     <span>Gewinne wurden bereits serverseitig gezogen. Animation verändert keine Chancen.</span>
