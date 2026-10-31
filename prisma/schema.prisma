@@ -57,8 +57,10 @@ model InventoryItem {
   soldAt DateTime?
   valueAtDrop Int?
   isDemo Boolean @default(false)
+  battleId String?
   createdAt DateTime @default(now())
   @@index([ownerId, soldAt, isDemo])
+  @@index([battleId, ownerId])
 }
 model Opening {
   id String @id @default(uuid())

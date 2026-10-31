@@ -52,6 +52,8 @@ async function main(){
  const guestAfter=await db.user.findUniqueOrThrow({where:{id:guest.id}});
  assert.equal(guestAfter.coins,balance-c.price,'Guest charged exactly once');
  const wonId=joined.json.battle.winner==='creator'?owner.id:guest.id;
+ assert.equal(joined.json.battle.awardedItemCount,2,'Response confirms two awarded items');
+ assert.equal(await db.inventoryItem.count({where:{ownerId:wonId,battleId:lobbyId}}),2,'Winner receives exactly two linked inventory items');
  assert.equal(await db.inventoryItem.count({where:{ownerId:wonId}}),wonId===owner.id?itemCount+2:2,'Winner collects both cards');
  assert.equal(await db.opening.count({where:{userId:guest.id}}),1,'Guest opening counted');
  assert.equal(await db.opening.count({where:{userId:owner.id}}),2,'Creator opening counted');

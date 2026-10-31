@@ -28,14 +28,16 @@ async function present(battles:BattleFull[],userId?:string){
  const itemIds=[...new Set(battles.flatMap(x=>[
   x.creatorItemId,x.guestItemId,...x.rounds.flatMap(r=>[r.creatorItemId,r.guestItemId])
  ].filter((s):s is string=>!!s)))];
- const [users,cases,items]=await Promise.all([
+ const [users,cases,items,awardRows]=await Promise.all([
   db.user.findMany({where:{id:{in:userIds}},select:{id:true,username:true}}),
   db.case.findMany({where:{id:{in:caseIds}},select:{id:true,name:true,price:true,imageUrl:true}}),
-  db.item.findMany({where:{id:{in:itemIds}},select:{id:true,name:true,rarity:true,value:true,imageUrl:true,weight:true}})
+  db.item.findMany({where:{id:{in:itemIds}},select:{id:true,name:true,rarity:true,value:true,imageUrl:true,weight:true}}),
+  db.inventoryItem.groupBy({by:['battleId','ownerId'],where:{battleId:{in:battles.map(b=>b.id)}} ,_count:{_all:true}})
  ]);
  const names=new Map(users.map(x=>[x.id,x.username]));
  const casesById=new Map(cases.map(x=>[x.id,x]));
  const itemsById=new Map(items.map(x=>[x.id,x]));
+ const awards=new Map(awardRows.map(row=>[row.battleId+':'+row.ownerId,row._count._all]));
  const drop=(id:string|null,value:number|null)=>id?{...itemsById.get(id),value:value??itemsById.get(id)?.value??0}:null;
  return battles.map(b=>{
   const rounds=b.rounds.length?b.rounds.slice().sort((a,z)=>a.position-z.position).map(r=>({
@@ -56,6 +58,7 @@ async function present(battles:BattleFull[],userId?:string){
    viewerRole:userId===b.creatorId?'creator':userId&&userId===b.guestId?'guest':'spectator',
    winner:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
    case:casesById.get(b.caseId)??null,
+   awardedItemCount:b.winnerId&&b.winnerId!=='BOT'?awards.get(b.id+':'+b.winnerId)??0:0,
    totalCost:b.totalCost||rounds.reduce((sum,r)=>sum+r.casePrice,0),
    rounds,creatorTotal,guestTotal,
    creatorDrop:rounds[0].creatorDrop,guestDrop:rounds[0].guestDrop,
@@ -118,8 +121,8 @@ export async function POST(req:NextRequest){
     }});
     await tx.opening.createMany({data:results.map(r=>({userId:user.id,caseId:r.caseId,itemId:r.a.id}))});
     if(won)await tx.inventoryItem.createMany({data:results.flatMap(r=>[
-     {ownerId:user.id,itemId:r.a.id,valueAtDrop:r.a.value},
-     {ownerId:user.id,itemId:r.b.id,valueAtDrop:r.b.value}
+     {ownerId:user.id,itemId:r.a.id,valueAtDrop:r.a.value,battleId:battle.id},
+     {ownerId:user.id,itemId:r.b.id,valueAtDrop:r.b.value,battleId:battle.id}
     ])});
     return tx.battle.update({where:{id:battle.id},data:{
      status:'FINISHED',winnerId:won?user.id:'BOT',
@@ -164,8 +167,8 @@ export async function POST(req:NextRequest){
      {userId:user.id,caseId:r.caseId,itemId:r.b.id}
     ])});
     await tx.inventoryItem.createMany({data:results.flatMap(r=>[
-     {ownerId:winnerId,itemId:r.a.id,valueAtDrop:r.a.value},
-     {ownerId:winnerId,itemId:r.b.id,valueAtDrop:r.b.value}
+     {ownerId:winnerId,itemId:r.a.id,valueAtDrop:r.a.value,battleId:b.id},
+     {ownerId:winnerId,itemId:r.b.id,valueAtDrop:r.b.value,battleId:b.id}
     ])});
     return tx.battle.findUniqueOrThrow({where:{id:b.id},include:{rounds:true}});
    },{isolationLevel:'Serializable'});
