@@ -121,6 +121,10 @@ model BattleRound {
  casePrice Int
  creatorItemId String?
  guestItemId String?
+ creatorPartnerItemId String?
+ guestPartnerItemId String?
+ creatorPartnerValue Int?
+ guestPartnerValue Int?
  creatorValue Int?
  guestValue Int?
  @@unique([battleId,position])
