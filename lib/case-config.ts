@@ -92,13 +92,13 @@ export const caseDefs:readonly CaseDefinition[]=[
  {slug:'karambit-eclipse',name:'Karambit Eclipse',price:200000,image:'Dreams & Nightmares Case',items:pool([
   ['M4A1-S | Hyper Beast',RARE,350],
   ['AK-47 | Neon Rider',RARE,250],
-  ['AK-47 | Vulcan',EPIC,3300],
+  ['AK-47 | Vulcan',EPIC,2950],
   ['AWP | Containment Breach',EPIC,2200],
   ['Desert Eagle | Blaze',RED,1800],
   ['M4A1-S | Printstream',RED,800],
   ['Karambit | Doppler',KNIFE,1000],
   ['Karambit | Fade',KNIFE,250],
-  ['AWP | Dragon Lore',RED,50]
+  ['AWP | Dragon Lore',RED,400]
  ])}
 ] as const;
 export const caseBySlug=new Map(caseDefs.map(c=>[c.slug,c]));
