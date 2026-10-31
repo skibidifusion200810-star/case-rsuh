@@ -125,6 +125,79 @@ async function main(){
  assert.equal(withdrawn.status,200,'Creator can cancel');
  assert.equal((await db.user.findUniqueOrThrow({where:{id:a.id}})).coins,beforeA+testCase.price);
  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,beforeB+testCase.price);
- console.log('PASS atomic trades, reserved inventory, duplicate merge value, 2v2 seat joins, team payout and refunds');
+
+ // A real two-person team against two virtual bots: bots occupy seats, do not
+ // create accounts, and can never withdraw virtual money or receive inventory.
+ const balanceA=(await db.user.findUniqueOrThrow({where:{id:a.id}})).coins;
+ const balanceB=(await db.user.findUniqueOrThrow({where:{id:b.id}})).coins;
+ const duoWithBots=await call(duo,'/api/duo-battles',
+  {action:'create',caseIds:[testCase.id,testCase.id]},a.cookie);
+ assert.equal(duoWithBots.status,200,'Creator can create 2v2 lobby for bots');
+ const botBattleId=duoWithBots.data.battle.id as string;
+ const unauthorized=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'guestId'},c.cookie);
+ assert.equal(unauthorized.status,400,'Only the lobby owner can add bots');
+ const firstBot=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'guestId'},a.cookie);
+ assert.equal(firstBot.status,200);
+ assert.equal(firstBot.data.battle.finished,false);
+ const taken=await call(duo,'/api/duo-battles',
+  {action:'join',battleId:botBattleId,seat:'guestId'},c.cookie);
+ assert.equal(taken.status,400,'A real player cannot steal the reserved bot seat');
+ const botTwo=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'guestPartnerId'},a.cookie);
+ assert.equal(botTwo.status,200,'Second bot fills the other opposing seat');
+ assert.equal(botTwo.data.battle.finished,false,'Still waiting for the second real teammate');
+ const tooMany=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'creatorPartnerId'},a.cookie);
+ assert.equal(tooMany.status,400,'No more than two bots per duo battle');
+ const removed=await call(duo,'/api/duo-battles',
+  {action:'removeBot',battleId:botBattleId,seat:'guestPartnerId'},a.cookie);
+ assert.equal(removed.status,200,'Owner can remove a bot before the battle starts');
+ const putBack=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'guestPartnerId'},a.cookie);
+ assert.equal(putBack.status,200,'Owner can refill a removed bot slot');
+ assert.equal(putBack.data.battle.finished,false);
+ const realTeammate=await call(duo,'/api/duo-battles',
+  {action:'join',battleId:botBattleId,seat:'creatorPartnerId'},b.cookie);
+ assert.equal(realTeammate.status,200,'Second real player starts 2v2 vs two bots');
+ assert.equal(realTeammate.data.battle.finished,true);
+ const botState=await get(battles,'/api/battles?id='+botBattleId,a.cookie);
+ assert.equal(botState.status,200);
+ assert.deepEqual(botState.data.battle.duoBotSeats,['guestId','guestPartnerId']);
+ assert.equal(botState.data.battle.creatorPartner,b.username);
+ assert.equal(botState.data.battle.guest,'RUSH BOT');
+ assert.equal(botState.data.battle.guestPartner,'RUSH BOT');
+ assert.equal(botState.data.battle.rounds.length,2);
+ assert.ok(botState.data.battle.rounds.every((r:{
+  creatorDrop:unknown,creatorPartnerDrop:unknown,guestDrop:unknown,guestPartnerDrop:unknown
+ })=>r.creatorDrop&&r.creatorPartnerDrop&&r.guestDrop&&r.guestPartnerDrop),'All four reels have server drops');
+ const humansWon=botState.data.battle.winner==='creator';
+ assert.equal(await db.inventoryItem.count({where:{battleId:botBattleId}}),
+  humansWon?8:0,'Bot team wins do not mint human inventory items');
+ assert.equal(botState.data.battle.awardedItemCount,humansWon?8:0);
+ for(const userId of [a.id,b.id])assert.equal(await db.inventoryItem.count({
+  where:{ownerId:userId,battleId:botBattleId}
+ }),humansWon?4:0,'Each human on winning team receives two items per case');
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:a.id}})).coins,
+  balanceA-testCase.price*2,'Only human creator paid for the battle');
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,
+  balanceB-testCase.price*2,'Human teammate paid the same entry cost');
+ const replayBots=await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:botBattleId,seat:'creatorPartnerId'},a.cookie);
+ assert.equal(replayBots.status,400,'Finished bot battle cannot be modified');
+
+ // Refund only paying humans, not fake bot accounts.
+ const refundable=await call(duo,'/api/duo-battles',
+  {action:'create',caseIds:[testCase.id]},a.cookie);
+ assert.equal(refundable.status,200);
+ assert.equal((await call(duo,'/api/duo-battles',
+  {action:'addBot',battleId:refundable.data.battle.id,seat:'guestId'},a.cookie)).status,200);
+ assert.equal((await call(duo,'/api/duo-battles',
+  {action:'cancel',battleId:refundable.data.battle.id},a.cookie)).status,200);
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:a.id}})).coins,
+  balanceA-testCase.price*2,'Cancel refunded only the actual payer');
+
+ console.log('PASS atomic trades, value-neutral merge, real 2v2 and 2 humans vs 2 bots, restricted bot seats and refunds');
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>db.$disconnect());
