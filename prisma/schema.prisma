@@ -13,6 +13,11 @@ model User {
   openSlots Int @default(1)
   starterClaimed Boolean @default(false)
   freeLastOpenedAt DateTime?
+  chatLastSentAt DateTime?
+  giftLastSentAt DateTime?
+  chatMessages ChatMessage[]
+  sentGifts GiftTransfer[] @relation("GiftSender")
+  receivedGifts GiftTransfer[] @relation("GiftReceiver")
   createdAt DateTime @default(now())
   sessions Session[]
   inventory InventoryItem[]
@@ -108,4 +113,39 @@ model BattleRound {
  guestValue Int?
  @@unique([battleId,position])
  @@index([caseId])
+}
+
+model ChatMessage {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  body String @db.VarChar(280)
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([userId,createdAt])
+}
+
+model GiftTransfer {
+  id String @id @default(uuid())
+  senderId String
+  sender User @relation("GiftSender",fields:[senderId],references:[id])
+  recipientId String
+  recipient User @relation("GiftReceiver",fields:[recipientId],references:[id])
+  amount Int
+  createdAt DateTime @default(now())
+  @@index([senderId,createdAt])
+  @@index([recipientId,createdAt])
+}
+
+model RareDropEvent {
+  id String @id @default(uuid())
+  username String
+  itemName String
+  rarity String
+  value Int
+  imageUrl String?
+  source String
+  inventoryItemId String @unique
+  createdAt DateTime @default(now())
+  @@index([createdAt])
 }
