@@ -86,7 +86,7 @@ export async function POST(req:NextRequest){
     for(const item of eligible){roll-=item.weight;if(roll<0){selected=item;break}}
     const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:c.price===0}});
     await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
-    return {item:selected,inventoryId:inv.id};
+    return {item:selected,inventoryId:inv.id,isDemo:c.price===0};
    },{isolationLevel:'Serializable'});
    return NextResponse.json({...opened,coins:(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins});
   }
