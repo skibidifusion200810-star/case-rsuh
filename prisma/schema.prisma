@@ -207,3 +207,13 @@ model AdminItemOverride {
  weight Int
  updatedAt DateTime @updatedAt
 }
+
+model GameEvent {
+  id String @id
+  discountPercent Int @default(0)
+  luckMultiplier Int @default(100)
+  startsAt DateTime
+  endsAt DateTime
+  createdById String
+  updatedAt DateTime @updatedAt
+}
