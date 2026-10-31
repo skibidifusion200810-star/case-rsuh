@@ -259,3 +259,48 @@ header.top nav{flex-wrap:wrap;justify-content:center}
 .modal .reopen:hover{background:#ffd285}
 .modal .reopen:disabled{opacity:.4}
 .multi-modal .multi-result{min-width:0}
+
+
+/* CASE RUSH game routes share the same auth, cases, inventory and battle logic */
+.game-header{position:sticky;top:0;z-index:8;background:#14171ce8!important;backdrop-filter:blur(18px);border-bottom:1px solid #3c414a!important}
+.game-header .game-logo{transition:transform .22s}.game-header .game-logo:hover{transform:translateY(-2px)}
+.game-header nav{display:flex;gap:clamp(9px,1.45vw,25px);align-items:center}
+.game-header .game-nav-link{color:#a6afbf;font-size:10px;letter-spacing:1.15px;font-weight:900;text-decoration:none;padding:29px 0;position:relative;white-space:nowrap;transition:color .2s}
+.game-header .game-nav-link:after{content:'';position:absolute;left:0;right:100%;bottom:16px;height:2px;background:#ffbd55;transition:right .24s}
+.game-header .game-nav-link:hover,.game-header .game-nav-link.active{color:#fff}
+.game-header .game-nav-link.active:after,.game-header .game-nav-link:hover:after{right:0}
+.game-header .primary{transition:transform .2s,background .2s}.game-header .primary:hover{transform:translateY(-2px)}
+.game-page-intro{position:relative;overflow:hidden;background:radial-gradient(ellipse at 78% -20%,#3d2d1e,#1b1d22 48%,#14161b);border-bottom:1px solid #3b4049}
+.game-page-intro:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.14;background:linear-gradient(90deg,#aeb7c331 1px,transparent 1px),linear-gradient(#aeb7c331 1px,transparent 1px);background-size:74px 74px;mask-image:linear-gradient(90deg,transparent,#000)}
+.game-intro-inner{position:relative;max-width:1280px;margin:auto;padding:63px 24px 70px}
+.game-intro-inner .eyebrow{color:#c4a474;font-size:10px}
+.game-intro-inner .intro-slash{color:#66717f;margin:0 8px}
+.game-intro-row{display:flex;justify-content:space-between;align-items:end;gap:32px}
+.game-intro-row h1{font-size:clamp(40px,5vw,67px);letter-spacing:-3.5px;line-height:1.02;margin:20px 0 0}
+.game-intro-row p{font-size:13px;max-width:370px;margin:0 0 5px}
+.game-main{padding-top:60px}
+.game-main>.eyebrow{font-size:10px}
+.game-main .case{transition:transform .28s,border-color .28s,box-shadow .28s;position:relative;overflow:hidden}
+.game-main .case:hover{transform:translateY(-9px);border-color:#ffbd55;box-shadow:0 20px 55px #0008}
+.game-main .case:after{content:'';position:absolute;top:0;left:0;width:0;height:3px;background:#ffbd55;transition:width .3s}
+.game-main .case:hover:after{width:100%}
+.game-main .case-bottom{transition:color .2s,letter-spacing .2s}
+.game-main .case:hover .case-bottom{color:#ffbd55;letter-spacing:1px}
+.game-main .item{transition:transform .2s,border-color .2s,box-shadow .2s}
+.game-main .item:hover{transform:translateY(-4px);box-shadow:0 14px 38px #0005}
+@media(max-width:1150px){
+ .game-header{height:auto;min-height:74px;flex-wrap:wrap;padding:15px 24px}
+ .game-header nav{order:3;flex:0 0 100%;justify-content:space-between;gap:12px;overflow-x:auto}
+ .game-header .game-nav-link{padding:10px 0}
+ .game-header .game-nav-link:after{bottom:0}
+}
+@media(max-width:700px){
+ .game-intro-inner{padding:42px 21px 49px}
+ .game-intro-row{display:block}.game-intro-row h1{font-size:clamp(34px,8vw,52px);letter-spacing:-1.5px}
+ .game-intro-row p{margin-top:16px}
+ .game-header nav{width:100%;justify-content:flex-start;gap:23px}
+ .game-header .game-nav-link{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .game-header *, .game-main *{transition-duration:.01ms!important}
+}
