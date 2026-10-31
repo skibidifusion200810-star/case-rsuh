@@ -55,6 +55,7 @@ export default function Home(){
     <Link href="/inventory">INVENTAR</Link>
     <Link href="/leaderboard">BESTENLISTE</Link>
     <Link href="/upgrades">UPGRADES</Link>
+    <button type="button" className="landing-social-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
    </nav>
    <div className="landing-account">
     {me?<><span className="landing-balance">{euros(me.coins)}</span><Link href="/inventory" className="landing-user">{me.username}</Link></>:

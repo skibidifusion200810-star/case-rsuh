@@ -190,3 +190,7 @@
  .landing .landing-signal,.landing .landing-main-case,.landing .landing-side-case,.landing .ring-two,.landing .landing-marquee-track,.landing .landing-art-label,.landing .landing-art-price{animation:none!important}
  .landing *, .landing *:before, .landing *:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}
 }
+
+.landing-navigation .landing-social-link{background:none;border:0;color:#b0b5bd;font-size:10px;font-weight:900;letter-spacing:1.3px;padding:32px 0;transition:color .2s;white-space:nowrap;cursor:pointer}
+.landing-navigation .landing-social-link:hover{color:#ffbd55}
+@media(max-width:940px){.landing-navigation .landing-social-link{padding:5px 0 10px}}

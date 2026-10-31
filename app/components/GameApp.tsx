@@ -114,6 +114,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
    <Link href="/inventory" className={'game-nav-link '+(tab==='inventory'?'active':'')} aria-current={tab==='inventory'?'page':undefined}>INVENTAR</Link>
    <Link href="/leaderboard" className={'game-nav-link '+(tab==='leaderboard'?'active':'')} aria-current={tab==='leaderboard'?'page':undefined}>BESTENLISTE</Link>
    <Link href="/upgrades" className={'game-nav-link '+(tab==='upgrades'?'active':'')} aria-current={tab==='upgrades'?'page':undefined}>UPGRADES</Link>
+   <button type="button" className="game-nav-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
   </nav>
   <div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><strong>{me.username}</strong><button onClick={()=>void act('logout')}>ABMELDEN</button></>:<button className="primary" onClick={()=>{setFormMode('login');setFormError('');setLogin(true)}}>ANMELDEN</button>}</div>
  </header>
