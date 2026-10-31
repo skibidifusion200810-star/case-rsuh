@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model User {
+  id String @id @default(uuid())
+  username String @unique
+  passwordHash String
+  coins Int @default(500)
+  starterClaimed Boolean @default(false)
+  createdAt DateTime @default(now())
+  sessions Session[]
+  inventory InventoryItem[]
+  openings Opening[]
+}
+model Session {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String @unique
+  expiresAt DateTime
+}
+model Case {
+  id String @id @default(uuid())
+  slug String @unique
+  name String
+  price Int
+  items Item[]
+  openings Opening[]
+}
+model Item {
+  id String @id @default(uuid())
+  name String
+  rarity String
+  value Int
+  weight Int
+  caseId String
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  inventory InventoryItem[]
+}
+model InventoryItem {
+  id String @id @default(uuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  itemId String
+  item Item @relation(fields: [itemId], references: [id])
+  soldAt DateTime?
+  createdAt DateTime @default(now())
+}
+model Opening {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  caseId String
+  case Case @relation(fields: [caseId], references: [id])
+  itemId String
+  boughtAt DateTime @default(now())
+}
