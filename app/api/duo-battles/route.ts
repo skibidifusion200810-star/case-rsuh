@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
 import {socialViewer,qualifiesForGlobalDrop} from '@/lib/social';
 import {getLiveEvent,eventPrice,eventWeight,type LiveEvent} from '@/lib/events';
+import {xpForOpening} from '@/lib/levels';
 import {randomInt} from 'node:crypto';
 import type {Item,Prisma} from '@prisma/client';
 
@@ -74,6 +75,8 @@ async function settleIfFull(tx:Prisma.TransactionClient,battleId:string){
    return humanId?[{userId:humanId,caseId:r.round.caseId,itemId:item.id}]:[];
   })
  )});
+ const battleXp=rounds.reduce((sum,r)=>sum+xpForOpening(catalogById.get(r.caseId)!.price),0);
+ for(const id of humans)await tx.user.update({where:{id},data:{xp:{increment:battleXp}}});
  const rewardRows=results.flatMap(r=>{
   const d=r.draws;
   const slots=wonA?[0,1]:[2,3];

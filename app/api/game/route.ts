@@ -4,6 +4,7 @@ import {randomBytes,createHash,randomInt} from 'node:crypto';
 import argon2 from 'argon2';
 import {priceForUpgrade} from '@/lib/upgrades';
 import {qualifiesForGlobalDrop} from '@/lib/social';
+import {levelProgress,xpForOpening} from '@/lib/levels';
 import {getLiveEvent,eventPrice,eventWeight,eventPublic} from '@/lib/events';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
@@ -15,9 +16,9 @@ async function user(req:NextRequest){
  return session.user;
 }
 function fail(error:string,status=400){return NextResponse.json({error},{status})}
-const safeUser=(u:{id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean})=>({
+const safeUser=(u:{id:string,username:string,coins:number,xp:number,openSlots:number,starterClaimed:boolean})=>({
  id:u.id,username:u.username,coins:u.coins,openSlots:u.openSlots,
- starterClaimed:u.starterClaimed,
+ starterClaimed:u.starterClaimed,...levelProgress(u.xp),
  isAdmin:process.env.ADMIN_USER_ID===u.id&&/^[a-f0-9-]{36}$/i.test(u.id)
 });
 export async function GET(req:NextRequest){
@@ -117,6 +118,9 @@ export async function POST(req:NextRequest){
      });
      if(!charged.count)throw Error('Nicht genügend Guthaben oder Upgrade fehlt');
     }
+    // All XP is awarded atomically with the server-confirmed opening.
+    const earnedXp=xpForOpening(c.price)*count;
+    await tx.user.update({where:{id:u.id},data:{xp:{increment:earnedXp}}});
     const total=eligible.reduce((sum,item)=>sum+item.weight,0);
     const results=[];
     for(let index=0;index<count;index++){

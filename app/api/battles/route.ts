@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import type {Item,Prisma} from '@prisma/client';
 import {db} from '@/lib/db';
 import {qualifiesForGlobalDrop} from '@/lib/social';
+import {xpForOpening} from '@/lib/levels';
 import {getLiveEvent,eventPrice,eventWeight,type LiveEvent} from '@/lib/events';
 import {createHash,randomInt} from 'node:crypto';
 
@@ -146,6 +147,7 @@ export async function POST(req:NextRequest){
      creatorItemId:r.a.id,guestItemId:r.b.id,creatorValue:r.a.value,guestValue:r.b.value
     }});
     await tx.opening.createMany({data:results.map(r=>({userId:user.id,caseId:r.caseId,itemId:r.a.id}))});
+    await tx.user.update({where:{id:user.id},data:{xp:{increment:selected.reduce((n,c)=>n+xpForOpening(c!.price),0)}}});
     if(won)await tx.inventoryItem.createMany({data:results.flatMap(r=>[
      {ownerId:user.id,itemId:r.a.id,valueAtDrop:r.a.value,battleId:battle.id},
      {ownerId:user.id,itemId:r.b.id,valueAtDrop:r.b.value,battleId:battle.id}
@@ -204,6 +206,9 @@ export async function POST(req:NextRequest){
      {userId:b.creatorId,caseId:r.caseId,itemId:r.a.id},
      {userId:user.id,caseId:r.caseId,itemId:r.b.id}
     ])});
+    const battleXp=ids.reduce((n,id)=>n+xpForOpening(lookup.get(id)!.price),0);
+    await tx.user.update({where:{id:b.creatorId},data:{xp:{increment:battleXp}}});
+    await tx.user.update({where:{id:user.id},data:{xp:{increment:battleXp}}});
     await tx.inventoryItem.createMany({data:results.flatMap(r=>[
      {ownerId:winnerId,itemId:r.a.id,valueAtDrop:r.a.value,battleId:b.id},
      {ownerId:winnerId,itemId:r.b.id,valueAtDrop:r.b.value,battleId:b.id}
