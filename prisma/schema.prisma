@@ -23,6 +23,9 @@ model User {
   sentTrades TradeOffer[] @relation("TradeSender")
   receivedTrades TradeOffer[] @relation("TradeReceiver")
   createdAt DateTime @default(now())
+  lastSeenAt DateTime?
+  lastLoginAt DateTime?
+  visitCount Int @default(0)
   sessions Session[]
   inventory InventoryItem[]
   openings Opening[]
@@ -217,4 +220,13 @@ model GameEvent {
   endsAt DateTime
   createdById String
   updatedAt DateTime @updatedAt
+}
+
+model AdminAnnouncement {
+ id String @id @default(uuid())
+ message String @db.VarChar(500)
+ createdAt DateTime @default(now())
+ expiresAt DateTime
+ createdById String
+ @@index([expiresAt,createdAt])
 }
