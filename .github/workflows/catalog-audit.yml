@@ -44,3 +44,5 @@ jobs:
 
       - name: Test PvP and bot battles, multi-open upgrades, escrow and refunds
         run: npm run test:battles-upgrades
+      - name: Test global rare drops, public chat and secure daily coin transfers
+        run: npm run test:social
