@@ -2,8 +2,9 @@
 import Link from 'next/link';
 import {useEffect,useState} from 'react';
 import './admin.css';
+import AdminEventControls from './EventControls';
 
-type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit';
+type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events';
 type User={id:string;username:string;coins:number;openSlots:number;isBanned:boolean;createdAt:string;_count:{inventory:number;openings:number}};
 type AdminCase={id:string;slug:string;name:string;price:number;items:Array<{id:string;name:string;rarity:string;value:number;weight:number;imageUrl:string|null}>};
 type Chat={id:string;body:string;createdAt:string;user:{id:string;username:string}};
@@ -22,7 +23,7 @@ function parseMoney(v:string):number|null{
 }
 const sections:[Tab,string,string][]=[
  ['overview','ÜBERSICHT','▦'],['users','SPIELER','◈'],
- ['cases','KISTEN','⬡'],['chat','CHAT','◉'],
+ ['cases','KISTEN','⬡'],['events','EVENTS','✦'],['chat','CHAT','◉'],
  ['battles','BATTLES','⚔'],['audit','PROTOKOLL','▤']
 ];
 export default function AdminPage(){
@@ -152,7 +153,7 @@ export default function AdminPage(){
     </aside>
     <main className="admin-main">
      <div className="admin-page-intro"><div><div className="admin-kicker">CASE RUSH / ADMINISTRATION / {tab.toUpperCase()}</div>
-      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
+      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
       <p>Serverseitig geschützt · Alle Aktionen werden überprüft und sensible Änderungen protokolliert.</p>
      </div><button className="admin-refresh" onClick={()=>void load(tab)} disabled={busy||loading}>↻ AKTUALISIEREN</button></div>
      {notice&&<p className="admin-notice" role="status">{notice}</p>}
@@ -169,6 +170,7 @@ export default function AdminPage(){
         <p className="admin-empty">Noch keine Aktionen protokolliert.</p>}
       </section>
      </div>}
+     {tab==='events'&&<AdminEventControls/>}
      {tab==='users'&&<section className="admin-section">
       <div className="admin-section-head"><h2>BENUTZERKONTEN</h2><span>GUTHABEN · SPERREN</span></div>
       <form className="admin-search" onSubmit={e=>{e.preventDefault();void load('users',query)}}>
