@@ -14,7 +14,7 @@ type Battle={
  id:string;status:string;againstBot:boolean;creator:string;guest:string|null;
  viewerRole:'creator'|'guest'|'spectator';winner:'creator'|'guest'|null;
  case:CSCase|null;creatorDrop:Drop|null;guestDrop:Drop|null;
- totalCost:number;rounds:Round[];creatorTotal:number;guestTotal:number;
+ totalCost:number;rounds:Round[];creatorTotal:number;guestTotal:number;awardedItemCount:number;
  createdAt:string
 };
 const euro=(value:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value/100);
@@ -191,7 +191,9 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
       </div>)}</div>
       {current.viewerRole!=='spectator'&&
        <p>{current.winner===current.viewerRole?
-        'Du hast gewonnen! Alle Items wurden automatisch deinem Inventar gutgeschrieben.':
+        current.awardedItemCount>=current.rounds.length*2?
+        'Du hast gewonnen! '+current.awardedItemCount+' Items sind deinem Inventar gutgeschrieben.':
+        'Gewonnen – die Gutschrift konnte noch nicht bestätigt werden. Bitte Inventar aktualisieren.':
         'Der Gegner hat gewonnen. Die Items gehören dem Sieger.'}</p>}
       {current.winner===current.viewerRole&&
        <button className="primary wide" onClick={async()=>{await onChange();currentRef.current=null;setCurrent(null);window.dispatchEvent(new Event('case-rush-show-inventory'))}}>GEWINNE IM INVENTAR ANSEHEN</button>}
