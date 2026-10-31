@@ -40,6 +40,8 @@ export default function AdminPage(){
  const [query,setQuery]=useState('');
  const [users,setUsers]=useState<User[]>([]);
  const [announcements,setAnnouncements]=useState<Announcement[]>([]);
+ const [activityUser,setActivityUser]=useState<User|null>(null);
+ const [activityLogs,setActivityLogs]=useState<Array<{id:string;activity:string;createdAt:string}>>([]);
  const [announcementText,setAnnouncementText]=useState('');
  const [announcementDuration,setAnnouncementDuration]=useState(30);
  const [cases,setCases]=useState<AdminCase[]>([]);
@@ -104,6 +106,7 @@ export default function AdminPage(){
   }catch(e){setError(e instanceof Error?e.message:'Aktion fehlgeschlagen');return false}
   finally{setBusy(false)}
  }
+ async function showActivity(u:User){setActivityUser(u);setActivityLogs([]);try{const r=await fetch('/api/admin?view=activity&userId='+encodeURIComponent(u.id),{cache:'no-store'});const j=await r.json();if(!r.ok)throw Error(j.error||'Aktivitäten nicht abrufbar');setActivityLogs(j.activity||[])}catch(e){setError(e instanceof Error?e.message:'Fehler')}}
  function credit(){
   if(!selectedUser)return;
   const cents=parseMoney(grant);
@@ -201,6 +204,7 @@ export default function AdminPage(){
         <td className="admin-gold">{euros(u.coins)}</td><td>{u._count.openings}</td><td>{u._count.inventory}</td>
         <td><span className={'admin-state '+(u.isBanned?'blocked':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'ok':'blocked')}>{u.isBanned?'GESPERRT':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'● ONLINE':'○ OFFLINE'}</span></td><td>{u.lastSeenAt?date(u.lastSeenAt):'Unbekannt'}</td><td>{u.lastLoginAt?date(u.lastLoginAt):'Unbekannt'}<small>{u.visitCount} Anmeldungen</small></td>
         <td><div className="admin-row-buttons">
+         <button className="admin-small" onClick={()=>void showActivity(u)}>VERLAUF</button>
          <button className="admin-small-primary" onClick={()=>{setSelectedUser(u);setGrant('100,00')}}>€ GEBEN</button>
          <button className="admin-small" disabled={busy} onClick={()=>ban(u)}>{u.isBanned?'ENTSPERREN':'SPERREN'}</button>
         </div></td></tr>)}</tbody>
@@ -254,6 +258,7 @@ export default function AdminPage(){
      </section>}
     </main>
    </div>}
+  {activityUser&&<div className="admin-dialog-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setActivityUser(null)}}><section className="admin-dialog" role="dialog" aria-modal="true" aria-label="Spieleraktivitäten"><button className="admin-dialog-close" onClick={()=>setActivityUser(null)}>✕</button><div className="admin-kicker">SPIELER / AKTIVITÄTEN</div><h2>{activityUser.username}</h2><p>Letzter Zugriff: {activityUser.lastSeenAt?date(activityUser.lastSeenAt):'Unbekannt'}</p><p>Letzter Login: {activityUser.lastLoginAt?date(activityUser.lastLoginAt):'Unbekannt'} · {activityUser.visitCount} Anmeldungen seit Aktivierung</p><div style={{maxHeight:350,overflowY:'auto'}}>{activityLogs.map(x=><div key={x.id} className="admin-event-log"><strong>{x.activity==='REGISTRATION'?'REGISTRIERUNG':'ANMELDUNG'}</strong><span>{date(x.createdAt)}</span></div>)}{!activityLogs.length&&<p className="admin-empty">Noch kein gespeicherter Login-Verlauf.</p>}</div></section></div>}
   {selectedUser&&<div className="admin-dialog-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedUser(null)}}>
     <section className="admin-dialog" role="dialog" aria-modal="true" aria-label="Virtuelles Guthaben vergeben">
      <button className="admin-dialog-close" onClick={()=>setSelectedUser(null)}>✕</button>
