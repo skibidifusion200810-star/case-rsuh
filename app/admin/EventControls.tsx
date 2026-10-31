@@ -92,7 +92,7 @@ export default function AdminEventControls(){
     </div>
     <div className="admin-event-preview">
      <span>BEISPIEL · 75-€-KISTE</span>
-     <div><del>75,00 €</del><strong>{priceExample.toLocaleString('de-DE',{style:'currency',currency:'EUR'})}</strong></div>
+     <div><del>75,00 €</del><strong>{(priceExample/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'})}</strong></div>
      <p>{luck===100?'Normale Drop-Chancen':(luck/100).toLocaleString('de-DE')+'× Gewicht für seltene und wertvolle Drops'}</p>
     </div>
     {error&&<div className="admin-error" role="alert">{error}</div>}
