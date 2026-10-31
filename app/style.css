@@ -83,7 +83,7 @@
 .leaders-table tbody tr:hover{background:#282e39}
 .leaders-place{font-variant-numeric:tabular-nums;color:#9cabbf;font-weight:900;letter-spacing:1px}
 .leaders-place-1{color:#ffcb63}.leaders-place-2{color:#bdcde0}.leaders-place-3{color:#ce9770}
-.leaders-user{white-space:nowrap;display:flex;gap:11px;align-items:center}
+.leaders-user{white-space:nowrap}.leaders-user .leader-small-avatar{vertical-align:middle;margin-right:11px}.leaders-user strong{vertical-align:middle}
 .leader-small-avatar{display:inline-grid;place-items:center;width:33px;height:33px;background:#353d4b;color:#e3c28a;font-weight:900;flex-shrink:0}
 .leaders-num{white-space:nowrap;font-variant-numeric:tabular-nums;color:#d1d9e6}
 .leaders-num.focus{color:#ffbe51;font-weight:900}
