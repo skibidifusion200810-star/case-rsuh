@@ -68,6 +68,7 @@ export async function POST(req:NextRequest){
    }
    const token=randomBytes(32).toString('hex');
    await db.session.create({data:{userId:u.id,tokenHash:hash(token),expiresAt:new Date(Date.now()+7*86400000)}});
+   await db.userAccessLog.create({data:{userId:u.id,activity:action==='register'?'REGISTRATION':'LOGIN'}});
    const response=NextResponse.json({user:safeUser(u)});
    response.cookies.set(cookie,token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:604800});
    return response;
