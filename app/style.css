@@ -507,3 +507,9 @@ header.top nav{flex-wrap:wrap;justify-content:center}
 .cr-chat-line-head .cr-player-identity{justify-content:flex-start;min-width:0}
 .cr-chat-line-head .cr-player-name{color:#ffe0a9;font-size:12px}
 @media(max-width:760px){.cr-header-player{min-width:94px;max-width:190px}.cr-header-player .cr-player-identity{gap:4px}.cr-player-identity .cr-player-name{max-width:125px;font-size:10px}.cr-xp-copy{font-size:8px}.cr-admin-badge,.cr-level-pill{font-size:8px!important;padding:3px 4px}.profile .coins{font-size:11px}}
+
+.cr-announcement{position:sticky;top:0;z-index:1000;display:flex;align-items:center;gap:16px;justify-content:center;background:#221b1e;border-bottom:1px solid #a43542;padding:12px 22px;color:#fff;box-shadow:0 8px 24px #0006}
+.cr-announcement-label{font-weight:950;color:#ff596a;font-size:11px;letter-spacing:1.2px;white-space:nowrap}
+.cr-announcement-message{font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.cr-announcement button{background:transparent;color:#e5b9c0;border:0;cursor:pointer;padding:8px}
+@media(max-width:600px){.cr-announcement{align-items:flex-start;gap:8px;padding:10px}.cr-announcement-message{font-size:12px}}
