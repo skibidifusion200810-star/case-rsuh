@@ -230,3 +230,11 @@ model AdminAnnouncement {
  createdById String
  @@index([expiresAt,createdAt])
 }
+
+model UserAccessLog {
+ id String @id @default(uuid())
+ userId String
+ activity String @db.VarChar(32)
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
