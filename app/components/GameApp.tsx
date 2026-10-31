@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import OpeningReel from './OpeningReel';
 import MultiOpeningReel from './MultiOpeningReel';
@@ -28,6 +28,17 @@ function AssetImage({src,alt,kind}:{src?:string|null,alt:string,kind:'case'|'ite
 }
 export default function GameApp({section}:{section:'cases'|'battles'|'inventory'|'leaderboard'|'upgrades'|'trading'}){
  const tab=section;
+ const headerRef=useRef<HTMLElement>(null);
+ const [headerHeight,setHeaderHeight]=useState(75);
+ useEffect(()=>{
+  const el=headerRef.current;
+  if(!el)return;
+  const measure=()=>setHeaderHeight(Math.ceil(el.getBoundingClientRect().height));
+  measure();
+  const observer=new ResizeObserver(measure);
+  observer.observe(el);
+  return()=>observer.disconnect();
+ },[]);
  const [multiWins,setMultiWins]=useState<{item:Item,inventoryId:string}[]>([]);
  const [multiSaleValue,setMultiSaleValue]=useState<number|null>(null);
  const [lastOpening,setLastOpening]=useState<{caseId:string,count:number}|null>(null);
@@ -112,7 +123,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
   lastOpening!.count<=(me.openSlots||1);
  const reopenLabel=previousCase&&lastOpening?
   'ERNEUT ÖFFNEN · '+lastOpening.count+'× '+previousCase.name+' · '+fmt(previousCase.price*lastOpening.count):'ERNEUT ÖFFNEN';
- return <><header className="top game-header">
+ return <><header ref={headerRef} className="top game-header">
   <Link className="logo game-logo" href="/">CASE <b>RUSH</b><i>.</i></Link>
   <nav aria-label="Hauptnavigation">
    <Link href="/" className="game-nav-link">START</Link>
@@ -127,6 +138,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
   </nav>
   <div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><div className="cr-header-player"><PlayerIdentity username={me.username} xp={me.xp} isAdmin={me.isAdmin}/><XPProgress xp={me.xp}/></div><button onClick={()=>void act('logout')}>ABMELDEN</button></>:<button className="primary" onClick={()=>{setFormMode('login');setFormError('');setLogin(true)}}>ANMELDEN</button>}</div>
  </header>
+ <div aria-hidden="true" style={{height:headerHeight,flexShrink:0}}/>
  <section className="game-page-intro">
   <div className="game-intro-inner">
    <div className="eyebrow">CASE RUSH <span className="intro-slash">/</span> {({cases:'ARSENAL',battles:'ARENA',inventory:'COLLECTION',leaderboard:'RANKINGS',upgrades:'PROGRESSION',trading:'MARKETPLACE'} as Record<string,string>)[tab]}</div>
