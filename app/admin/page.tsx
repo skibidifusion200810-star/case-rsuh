@@ -43,7 +43,8 @@ export default function AdminPage(){
  const [activityUser,setActivityUser]=useState<User|null>(null);
  const [activityLogs,setActivityLogs]=useState<Array<{id:string;activity:string;createdAt:string}>>([]);
  const [announcementText,setAnnouncementText]=useState('');
- const [announcementDuration,setAnnouncementDuration]=useState(30);
+ const [announcementDuration,setAnnouncementDuration]=useState(5);
+ const [announcementUnit,setAnnouncementUnit]=useState<'seconds'|'minutes'|'hours'>('seconds');
  const [cases,setCases]=useState<AdminCase[]>([]);
  const [chats,setChats]=useState<Chat[]>([]);
  const [battles,setBattles]=useState<Battle[]>([]);
@@ -183,12 +184,10 @@ export default function AdminPage(){
      {tab==='announcements'&&<section className="admin-section">
       <div className="admin-section-head"><h2>LIVE ANKÜNDIGUNG VERÖFFENTLICHEN</h2><span>GLOBAL · ALLE SPIELER</span></div>
       <p className="admin-help">Deine Nachricht erscheint automatisch auf allen geöffneten Spielseiten.</p>
-      <form onSubmit={e=>{e.preventDefault();if(!announcementText.trim())return;void (async()=>{if(await mutate('publishAnnouncement',{message:announcementText.trim(),durationMinutes:announcementDuration},'Ankündigung veröffentlicht','announcements'))setAnnouncementText('')})()}} className="admin-announcement-form">
+      <form onSubmit={e=>{e.preventDefault();if(!announcementText.trim())return;void (async()=>{if(await mutate('publishAnnouncement',{message:announcementText.trim(),durationSeconds:announcementDuration*(announcementUnit==='hours'?3600:announcementUnit==='minutes'?60:1)},'Ankündigung veröffentlicht','announcements'))setAnnouncementText('')})()}} className="admin-announcement-form">
        <label>DEINE ANKÜNDIGUNG<textarea maxLength={500} required rows={4} placeholder="Event startet in 5 Minuten!" value={announcementText} onChange={e=>setAnnouncementText(e.target.value)}/></label>
-       <label>ANZEIGEDAUER<select value={announcementDuration} onChange={e=>setAnnouncementDuration(Number(e.target.value))}>
-        {[5,10,30,60,120,1440].map(n=><option key={n} value={n}>{n===1440?'24 Stunden':n+' Minuten'}</option>)}
-       </select></label>
-       <button type="submit" className="admin-primary" disabled={busy||!announcementText.trim()}>✦ AN ALLE SPIELER SENDEN</button>
+       <label>ANZEIGEDAUER<div style={{display:'flex',gap:8}}><input aria-label="Dauer" type="number" min="1" max={announcementUnit==='hours'?24:announcementUnit==='minutes'?1440:86400} step="1" required value={announcementDuration} onChange={e=>setAnnouncementDuration(Number(e.target.value))} style={{minWidth:0,width:'50%',background:'#151a21',border:'1px solid #4c5664',color:'#fff',padding:14}}/><select aria-label="Zeiteinheit" value={announcementUnit} onChange={e=>setAnnouncementUnit(e.target.value as 'seconds'|'minutes'|'hours')}><option value="seconds">Sekunden</option><option value="minutes">Minuten</option><option value="hours">Stunden</option></select></div></label>
+       <button type="submit" className="admin-primary" disabled={busy||!announcementText.trim()||!Number.isInteger(announcementDuration)||announcementDuration<1||announcementDuration*(announcementUnit==='hours'?3600:announcementUnit==='minutes'?60:1)>86400}>✦ AN ALLE SPIELER SENDEN</button>
       </form>
       <div className="admin-section-head"><h2>LETZTE ANKÜNDIGUNGEN</h2></div>
       {announcements.map(a=><div key={a.id} className="admin-announcement-row"><div><strong>{a.message}</strong><small>{date(a.createdAt)} · Ende {date(a.expiresAt)} · {new Date(a.expiresAt).getTime()>Date.now()?'LIVE':'ABGELAUFEN'}</small></div><button className="admin-small-danger" disabled={busy} onClick={()=>void mutate('removeAnnouncement',{announcementId:a.id},'Ankündigung entfernt','announcements')}>ENTFERNEN</button></div>)}
