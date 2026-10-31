@@ -37,3 +37,5 @@ jobs:
         run: npm run db:seed
       - name: Audit all active skin images and values
         run: npm run audit:catalog
+      - name: Test unlimited free and paid case opening transactions
+        run: npm run test:openings
