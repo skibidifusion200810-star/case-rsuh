@@ -12,7 +12,7 @@ const labels:Record<LeaderboardCategory,string>={
 };
 const description:Record<LeaderboardCategory,string>={
  balance:'Wer hat das höchste virtuelle Guthaben?',
- inventory:'Wert aller unverkauften, verkaufbaren Items. Gratis-Sammlerstücke zählen nicht.',
+ inventory:'Wert aller unverkauften Items einschließlich Gratis-Kisten-Gewinnen.',
  openings:'Alle erfolgreich geöffneten Kisten, einschließlich kostenloser Öffnungen.'
 };
 const score=(u:LeaderboardEntry,category:LeaderboardCategory)=>
@@ -86,6 +86,6 @@ export default function Leaderboard(){
     <p className="leaders-meta">TOP {users.length} · Automatische Aktualisierung alle 30 Sekunden{data?.updatedAt?' · Stand: '+new Date(data.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</p>
    </>
   }
-  <p className="leaders-footnote">Sämtliche €-Beträge sind ausschließlich virtuelle Spielwerte. Gratis-Kisten-Gewinne sind nicht verkaufbar und erhöhen deshalb den Inventarwert nicht. Gratis-Kisten zählen bei den Öffnungen mit.</p>
+  <p className="leaders-footnote">Sämtliche €-Beträge sind ausschließlich virtuelle Spielwerte. Gratis-Gewinne können verkauft werden und zählen bis dahin zum Inventarwert. Gratis-Öffnungen zählen mit.</p>
  </section>
 }

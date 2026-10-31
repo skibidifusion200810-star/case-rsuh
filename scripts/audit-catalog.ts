@@ -12,7 +12,7 @@ async function main(){
    total++;
    if(item.priceOrigin==='CSMONEY_TRADE')csmoney++;
    else legacy++;
-   const ok=!!item.imageUrl&&item.value>1&&!!item.marketHashName;
+   const ok=!!item.imageUrl&&item.value>=1&&!!item.marketHashName;
    if(!ok)invalid++;
    console.log(ok?'PASS':'FAIL',item.marketHashName??item.name,
     (item.value/100).toFixed(2)+' EUR',item.priceOrigin,

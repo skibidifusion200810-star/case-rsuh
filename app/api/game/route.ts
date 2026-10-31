@@ -16,7 +16,7 @@ const safeUser=(u:{id:string,username:string,coins:number,starterClaimed:boolean
 export async function GET(req:NextRequest){
  try{
   const cmd=req.nextUrl.searchParams.get('action')||'cases';
-  if(cmd==='cases')return NextResponse.json({cases:await db.case.findMany({include:{items:{where:{weight:{gt:0},value:{gt:1},imageUrl:{not:null}}}},orderBy:{price:'asc'}})});
+  if(cmd==='cases')return NextResponse.json({cases:await db.case.findMany({include:{items:{where:{weight:{gt:0},value:{gte:1},imageUrl:{not:null}}}},orderBy:{price:'asc'}})});
   const u=await user(req);
   if(cmd==='me')return NextResponse.json({user:u?safeUser(u):null});
   if(cmd==='inventory'){
@@ -64,12 +64,11 @@ export async function POST(req:NextRequest){
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
-    const eligible=c.items.filter(i=>i.weight>0&&i.value>1&&!!i.imageUrl);
+    const eligible=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl);
     if(!eligible.length)throw new Error('Keine überprüften Gewinne verfügbar');
     if(c.price===0){
      // Unlimited lifetime uses, with a short request throttle to prevent bot spam.
-     // Free practice drops can be collected but cannot be redeemed for virtual currency:
-     // otherwise unlimited free rolls would print infinite balance.
+     // Unlimited free rewards are sellable; short server-side cooldown limits spam.
      const cutoff=new Date(Date.now()-2500);
      const changed=await tx.user.updateMany({
       where:{id:u.id,OR:[{freeLastOpenedAt:null},{freeLastOpenedAt:{lt:cutoff}}]},
@@ -84,9 +83,9 @@ export async function POST(req:NextRequest){
     let roll=randomInt(weight);
     let selected=eligible[eligible.length-1];
     for(const item of eligible){roll-=item.weight;if(roll<0){selected=item;break}}
-    const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:c.price===0}});
+    const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:false}});
     await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
-    return {item:selected,inventoryId:inv.id,isDemo:c.price===0};
+    return {item:selected,inventoryId:inv.id,isDemo:false};
    },{isolationLevel:'Serializable'});
    return NextResponse.json({...opened,coins:(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins});
   }
@@ -96,7 +95,6 @@ export async function POST(req:NextRequest){
    const result=await db.$transaction(async tx=>{
     const inv=await tx.inventoryItem.findUnique({where:{id:inventoryId},include:{item:true}});
     if(!inv||inv.ownerId!==u.id||inv.soldAt)throw new Error('Item nicht verfügbar');
-    if(inv.isDemo)throw new Error('Gratis-Kisten-Gewinne sind Sammlerstücke und nicht verkaufbar');
     const claimed=await tx.inventoryItem.updateMany({where:{id:inventoryId,ownerId:u.id,soldAt:null},data:{soldAt:new Date()}});
     if(claimed.count!==1)throw new Error('Bereits verkauft');
     const paidValue=inv.valueAtDrop??inv.item.value;
@@ -109,7 +107,7 @@ export async function POST(req:NextRequest){
  }catch(e){
   console.error('CASE RUSH API:',e);
   const message=e instanceof Error?e.message:'';
-  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten'||message==='Gratis-Kisten-Gewinne sind Sammlerstücke und nicht verkaufbar')return fail(message);
+  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten')return fail(message);
   if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2002')return fail('Dieser Benutzername ist bereits vergeben',409);
   if(typeof e==='object'&&e!==null&&'code' in e&&String(e.code).startsWith('P10'))return fail('Datenbank momentan nicht erreichbar. Bitte später erneut versuchen.',503);
   return fail('Aktion fehlgeschlagen. Bitte prüfe die Eingaben und probiere es erneut.',500);

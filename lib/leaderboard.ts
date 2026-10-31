@@ -30,7 +30,7 @@ type RawRank={
 };
 
 /** Aggregate inventory and opening history separately to avoid multiplying totals.
- * Demo/free-case items have no sellable inventory value. Every opening counts.
+ * Free-case prizes are sellable and count toward inventory value. Every opening counts.
  */
 export async function loadLeaderboard(db:PrismaClient,limit=20):Promise<LeaderboardResult>{
  const cap=Math.max(1,Math.min(50,Math.trunc(limit)));
@@ -41,7 +41,7 @@ export async function loadLeaderboard(db:PrismaClient,limit=20):Promise<Leaderbo
          COUNT(*)::bigint AS "inventoryItems"
   FROM "InventoryItem" i
   JOIN "Item" item ON item.id=i."itemId"
-  WHERE i."soldAt" IS NULL AND i."isDemo"=false
+  WHERE i."soldAt" IS NULL
   GROUP BY i."ownerId"
  ),
  opening_totals AS (

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import {loadCsMoneyQuotes} from '../lib/csmoney-prices';
 import {caseDefs} from '../lib/case-config';
+import {referenceQuoteFor} from '../lib/market-reference';
 
 const db = new PrismaClient();
 const BASE = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en';
@@ -38,6 +39,8 @@ async function main(){
   json<PriceData>(PRICE_URL).catch(error=>{console.warn('No snapshot:',error);return {prices:{}} as PriceData}),
   loadCsMoneyQuotes()
  ]);
+ // Retroactively allow selling previous free-case rewards; keep their stored values.
+ await db.inventoryItem.updateMany({where:{isDemo:true},data:{isDemo:false}});
  const skinsByName=new Map(skins.map(x=>[label(x.name),x]));
  const cratesByName=new Map(crates.map(x=>[x.name,x]));
  const prices=pricesFeed.prices??{};
@@ -70,8 +73,9 @@ async function main(){
   for(const item of pool){
    const skin=skinsByName.get(label(item.name));
    if(!skin){console.warn('No ByMykel item:',item.name);missing++;continue}
-   const bestWear=['Factory New','Minimal Wear','Field-Tested','Well-Worn','Battle-Scarred']
-     .find(w=>skin.wears?.some(x=>x.name===w))??'Field-Tested';
+   const reference=referenceQuoteFor(item.name);
+   const bestWear=reference?.wear??(['Factory New','Minimal Wear','Field-Tested','Well-Worn','Battle-Scarred']
+     .find(w=>skin.wears?.some(x=>x.name===w))??'Field-Tested');
    const exactHash=skin.name+' ('+bestWear+')';
    const quote=csQuotes.get(exactHash);
    const imageUrl=await validImage(skin.image)?skin.image:
@@ -81,9 +85,10 @@ async function main(){
    const fullName=exactHash;
    // Never substitute an arbitrary case-price percentage or one cent for a missing quote.
    const legacyValue=!strict&&price?.marketHashName===exactHash?price.value:0;
-   const value=quote?.eurCents??legacyValue;
-   const source=quote?'CSMONEY_TRADE':legacyValue?'BYMYKEL_USD_SNAPSHOT':'UNVERIFIED';
-   if(value<=1||(strict&&!quote)||(item.name==='AWP | Dragon Lore'&&!quote&&value<100000)){
+   const value=quote?.eurCents??reference?.eurCents??legacyValue;
+   const source=quote?'CSMONEY_TRADE':reference?'CSMONEY_MARKET_REFERENCE':
+     legacyValue?'BYMYKEL_USD_SNAPSHOT':'UNVERIFIED';
+   if(value<1||(strict&&!quote)||(item.name==='AWP | Dragon Lore'&&!quote&&value<100000)){
     console.warn('[PRICE UNVERIFIED] not eligible for drops:',exactHash);
     continue;
    }
@@ -97,8 +102,8 @@ async function main(){
    if(existing){
     // Never rewrite item values held in inventories; purchase/award amounts stay fixed.
     await db.item.update({where:{id:existing.id},data:{
-     imageUrl,weight:item.weight,value,priceOrigin:source,marketHashName:exactHash,
-     priceCheckedAt:quote?.checkedAt??(pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
+     imageUrl,weight:item.weight,rarity:item.rarity,value,priceOrigin:source,marketHashName:exactHash,
+     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
     }});
    }else{
     await db.item.create({data:{
@@ -107,11 +112,11 @@ async function main(){
      value,
      priceOrigin:source,
      marketHashName:exactHash,
-     priceCheckedAt:quote?.checkedAt??(pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
+     priceCheckedAt:quote?.checkedAt??(reference?new Date(reference.observedAt):pricesFeed.metadata?.updated_at?new Date(pricesFeed.metadata.updated_at):null)
     }});
    }
    imported++;verified++;
-   if(quote)csmoney++;else legacy++;
+   if(quote||reference)csmoney++;else legacy++;
   }
   if(imported===0)console.warn('No verified-price skins for '+def.slug+'; opening disabled until pricing is available');
   if(imported<pool.length)console.warn('[CASE INVENTORY]',def.name,'configured',pool.length,'available',imported);
