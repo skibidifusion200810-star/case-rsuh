@@ -51,7 +51,7 @@ function SpinLane({winner,pool,name,onDone}:{
     if(e.target===track.current&&e.propertyName==='transform')finish();
    }}>
     {cards.map((weapon,i)=><div className="battle-spin-card" key={i} style={{
-     borderBottomColor:colors[weapon.rarity]??'#a4acb8'
+     borderBottomColor:colors[weapon.rarity??'']??'#a4acb8'
     }}>
      {weapon.imageUrl?<img src={weapon.imageUrl} alt="" draggable={false}/>:<span>✦</span>}
      <strong>{weapon.name}</strong>

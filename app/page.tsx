@@ -30,6 +30,12 @@ export default function Home(){
  async function get(url:string){const r=await fetch(url,{cache:'no-store'});if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'Serververbindung fehlgeschlagen ('+r.status+')')}return r.json()}
  async function refresh(){try{const [c,m]=await Promise.all([get('/api/game?action=cases'),get('/api/game?action=me')]);setCases(c.cases);setMe(m.user);setInventory(m.user?(await get('/api/game?action=inventory')).items:[]);setError('')}catch(e){setError(e instanceof Error?e.message:String(e))}}
  useEffect(()=>{void refresh();setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)},[]);
+ useEffect(()=>{
+  const showInventory=()=>{setTab('inventory');void refresh()};
+  window.addEventListener('case-rush-show-inventory',showInventory);
+  return()=>window.removeEventListener('case-rush-show-inventory',showInventory);
+ },[]);
+ useEffect(()=>{if(tab==='inventory')void refresh()},[tab]);
  async function act(action:string,other:Record<string,unknown>={}){setBusy(true);setError('');setFormError('');try{const r=await fetch('/api/game',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...other})});const j=await r.json().catch(()=>({error:'Server noch nicht erreichbar. Bitte später erneut versuchen.'}));if(!r.ok)throw Error(j.error||'Serverfehler ('+r.status+')');await refresh();return j}catch(e){const message=e instanceof Error?e.message:String(e);setError(message);setFormError(message);return null}finally{setBusy(false)}}
  async function open(c:Case){
   if(!me){setFormMode('login');setFormError('');setLogin(true);return}

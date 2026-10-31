@@ -18,13 +18,13 @@ async function register(label:string){
  const r=await request(game,'/api/game',{action:'register',username,password:'StrongPassword_987654321'});
  assert.equal(r.status,200);
  assert.ok(r.cookie);
- await db.user.update({where:{username},data:{coins:100000}});
+ await db.user.update({where:{username},data:{coins:1000000}});
  return {username,id:r.json.user.id,cookie:r.cookie!};
 }
 async function main(){
  const [owner,guest,third]=await Promise.all([register('owner'),register('guest'),register('third')]);
  const c=await db.case.findUniqueOrThrow({where:{slug:'urban-supply'}});
- const balance=100000;
+ const balance=1000000;
  const bot=await request(battleAction,'/api/battles',{action:'create',caseId:c.id,againstBot:true},owner.cookie);
  assert.equal(bot.status,200,'Bot battle must start');
  assert.equal(bot.json.battle.status,'FINISHED');
@@ -68,13 +68,13 @@ async function main(){
  const upgrade=await request(game,'/api/game',{action:'upgrade',tier:2},owner.cookie);
  assert.equal(upgrade.status,200,'2x upgrade purchase');
  assert.equal(upgrade.json.user.openSlots,2);
- assert.equal(upgrade.json.user.coins,balance-2*c.price-100);
+ assert.equal(upgrade.json.user.coins,balance-2*c.price-10000);
  const upgradeDuplicate=await request(game,'/api/game',{action:'upgrade',tier:2},owner.cookie);
  assert.equal(upgradeDuplicate.status,400,'No second debit for already bought tier');
  const two=await request(game,'/api/game',{action:'open',caseId:c.id,count:2},owner.cookie);
  assert.equal(two.status,200,'2x opening must work with upgrade');
  assert.equal(two.json.results.length,2);
- assert.equal((await db.user.findUniqueOrThrow({where:{id:owner.id}})).coins,balance-4*c.price-100);
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:owner.id}})).coins,balance-4*c.price-10000);
  const unowned=await request(game,'/api/game',{action:'open',caseId:c.id,count:4},owner.cookie);
  assert.equal(unowned.status,400,'Count exceeding owned slots rejected');
  const finalTier=await request(game,'/api/game',{action:'upgrade',tier:10},owner.cookie);
