@@ -8,6 +8,8 @@ async function main(){
   console.log('\nCASE',c.name, '| IMAGE',c.imageUrl?'provided':'MISSING', '| ACTIVE',active.length);
   if(!c.imageUrl){invalid++;console.error('Missing case image',c.name)}
   if(!active.length)console.warn('NO ELIGIBLE ITEMS',c.name);
+  if(c.price>100&&active.some(i=>i.value<=2)){invalid++;console.error('Cheap €0.01/€0.02 item in expensive case',c.name)}
+  if(c.price===200000&&!active.some(i=>i.value>c.price)){invalid++;console.error('No profitable jackpot in €2000 case')}
   for(const item of active){
    total++;
    if(item.priceOrigin==='CSMONEY_TRADE')csmoney++;

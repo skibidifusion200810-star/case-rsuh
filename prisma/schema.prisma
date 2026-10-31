@@ -10,6 +10,7 @@ model User {
   username String @unique
   passwordHash String
   coins Int @default(500)
+  openSlots Int @default(1)
   starterClaimed Boolean @default(false)
   freeLastOpenedAt DateTime?
   createdAt DateTime @default(now())
@@ -68,4 +69,23 @@ model Opening {
   itemId String
   boughtAt DateTime @default(now())
   @@index([userId])
+}
+
+model Battle {
+ id String @id @default(uuid())
+ caseId String
+ creatorId String
+ guestId String?
+ againstBot Boolean @default(false)
+ status String @default("WAITING")
+ winnerId String?
+ creatorItemId String?
+ guestItemId String?
+ creatorValue Int?
+ guestValue Int?
+ createdAt DateTime @default(now())
+ finishedAt DateTime?
+ @@index([status,createdAt])
+ @@index([creatorId,status])
+ @@index([guestId])
 }

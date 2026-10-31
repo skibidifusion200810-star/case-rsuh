@@ -37,15 +37,14 @@ assert.equal(freeGold[0].name,'Karambit | Doppler');
 assert.equal(freeGold[0].weight,1,'The free gold knife must be one weight out of 1,000,000');
 assert.equal(freeGold[0].weight/free.items.reduce((sum,item)=>sum+item.weight,0),1/1_000_000,
  'Gold knife chance must be 1 in 1,000,000 (0.0001%)');
-// Real source-backed one/two-cent drops; not a made-up price for expensive skins.
-for(const slug of ['first-drop','urban-supply','neon-circuit','crimson-strike']){
- const c=caseDefs.find(c=>c.slug===slug)!;
- const cheap=['P250 | Sand Dune','MP9 | Sand Dashed','SCAR-20 | Sand Mesh','MP7 | Army Recon'];
- const weight=c.items.filter(i=>cheap.includes(i.name)).reduce((sum,i)=>sum+i.weight,0);
- assert.ok(weight/c.items.reduce((sum,i)=>sum+i.weight,0)>=0.5,
-  'At least half of cheap case rolls are verified low-price skins: '+slug);
-}
-
+// Low-valued 1-2 cent skin variants must not appear in any case above €1.
+const pennies=new Set(['P250 | Sand Dune','MP9 | Sand Dashed','SCAR-20 | Sand Mesh','MP7 | Army Recon']);
+for(const item of caseDefs.slice(2).flatMap(c=>c.items))
+ assert.ok(!pennies.has(item.name),'Only first two cases may contain €0.01–0.02 skins');
+assert.ok(caseDefs[0].items.some(i=>pennies.has(i.name)));
+assert.ok(caseDefs[1].items.some(i=>pennies.has(i.name)));
+assert.ok(caseDefs[8].items.some(i=>i.name==='AWP | Dragon Lore'),
+ 'The €2,000 case needs a rare jackpot prize');
 const freeRare=free.items.filter(x=>['RARE','EPIC','LEGENDARY','KNIFE'].includes(x.rarity))
  .reduce((a,b)=>a+b.weight,0)/1_000_000;
 assert.ok(freeRare<=0.001,'Free case must have <=0.1% chance for Rare+');

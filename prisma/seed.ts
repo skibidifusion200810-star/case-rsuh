@@ -88,7 +88,7 @@ async function main(){
    const value=quote?.eurCents??reference?.eurCents??legacyValue;
    const source=quote?'CSMONEY_TRADE':reference?'CSMONEY_MARKET_REFERENCE':
      legacyValue?'BYMYKEL_USD_SNAPSHOT':'UNVERIFIED';
-   if(value<1||(strict&&!quote)||(item.name==='AWP | Dragon Lore'&&!quote&&value<100000)){
+   if(value<1||(strict&&!quote)||(def.price>100&&value<=2)||(item.name==='AWP | Dragon Lore'&&value<200000)){
     console.warn('[PRICE UNVERIFIED] not eligible for drops:',exactHash);
     continue;
    }
