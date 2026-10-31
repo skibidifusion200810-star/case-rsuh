@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
 import {randomBytes,createHash,randomInt} from 'node:crypto';
 import argon2 from 'argon2';
+import {priceForUpgrade} from '@/lib/upgrades';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 async function user(req:NextRequest){
@@ -60,8 +61,7 @@ export async function POST(req:NextRequest){
   const u=await user(req);if(!u)return fail('Bitte anmelden',401);
   if(action==='upgrade'){
    const tier=typeof b.tier==='number'?b.tier:0;
-   const prices:Record<number,number>={2:100,4:1000,8:1500,10:2000};
-   const cost=prices[tier];
+   const cost=priceForUpgrade(tier);
    if(!cost)return fail('Ungültige Upgrade-Stufe');
    const result=await db.user.updateMany({
     where:{id:u.id,openSlots:{lt:tier},coins:{gte:cost}},
@@ -113,6 +113,31 @@ export async function POST(req:NextRequest){
    const coins=(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins;
    return NextResponse.json(count===1?{...opened[0],coins}:{results:opened,coins});
   }
+  if(action==='sellBatch'){
+   const ids=b.inventoryIds;
+   if(!Array.isArray(ids)||ids.length<1||ids.length>10||
+      !ids.every(id=>typeof id==='string'&&id.length>0)||
+      new Set(ids).size!==ids.length)return fail('Bitte 1 bis 10 unterschiedliche Items auswählen');
+   const inventoryIds=ids as string[];
+   const settled=await db.$transaction(async tx=>{
+    // Read only the authenticated user's still-unsold items. Use the value at draw.
+    const rows=await tx.inventoryItem.findMany({
+     where:{id:{in:inventoryIds},ownerId:u.id,soldAt:null},
+     select:{id:true,valueAtDrop:true,item:{select:{value:true}}}
+    });
+    if(rows.length!==inventoryIds.length)throw Error('Mindestens ein Item ist bereits verkauft oder gehört dir nicht');
+    const payout=rows.reduce((sum,row)=>sum+(row.valueAtDrop??row.item.value),0);
+    if(!Number.isSafeInteger(payout)||payout<0)throw Error('Ungültiger Verkaufswert');
+    const marked=await tx.inventoryItem.updateMany({
+     where:{id:{in:inventoryIds},ownerId:u.id,soldAt:null},
+     data:{soldAt:new Date()}
+    });
+    if(marked.count!==inventoryIds.length)throw Error('Mindestens ein Item wurde bereits verkauft');
+    const player=await tx.user.update({where:{id:u.id},data:{coins:{increment:payout}}});
+    return {soldIds:inventoryIds,coins:player.coins,value:payout,count:marked.count};
+   },{isolationLevel:'Serializable'});
+   return NextResponse.json(settled);
+  }
   if(action==='sell'){
    const inventoryId=typeof b.inventoryId==='string'?b.inventoryId:'';
    if(!inventoryId)return fail('Ungültiges Inventar-Item');
@@ -131,7 +156,7 @@ export async function POST(req:NextRequest){
  }catch(e){
   console.error('CASE RUSH API:',e);
   const message=e instanceof Error?e.message:'';
-  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten'||message==='Gratis-Kisten können nur einzeln geöffnet werden'||message==='Nicht genügend Guthaben oder Upgrade fehlt')return fail(message);
+  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten'||message==='Gratis-Kisten können nur einzeln geöffnet werden'||message==='Nicht genügend Guthaben oder Upgrade fehlt'||message==='Mindestens ein Item ist bereits verkauft oder gehört dir nicht'||message==='Mindestens ein Item wurde bereits verkauft')return fail(message);
   if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2002')return fail('Dieser Benutzername ist bereits vergeben',409);
   if(typeof e==='object'&&e!==null&&'code' in e&&String(e.code).startsWith('P10'))return fail('Datenbank momentan nicht erreichbar. Bitte später erneut versuchen.',503);
   return fail('Aktion fehlgeschlagen. Bitte prüfe die Eingaben und probiere es erneut.',500);

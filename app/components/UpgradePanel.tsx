@@ -1,7 +1,8 @@
 'use client';
 import {useState} from 'react';
+import {UPGRADE_TIERS} from '@/lib/upgrades';
 
-const tiers=[{slots:2,price:100},{slots:4,price:1000},{slots:8,price:1500},{slots:10,price:2000}];
+const tiers=UPGRADE_TIERS;
 const eur=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
 export default function UpgradePanel({slots,coins,purchase}:{slots:number,coins:number,purchase:(tier:number)=>Promise<boolean>}){
  const [upgrading,setUpgrading]=useState(0);
