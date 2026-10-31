@@ -50,3 +50,47 @@
 .reel-tile strong{min-height:29px;max-height:29px;font-size:10.5px}
 .reel-item-value{display:block;margin-top:auto;font-size:13px;color:#ffbf59;font-weight:900;white-space:nowrap;line-height:1.35;font-variant-numeric:tabular-nums}
 .reel-item-value small{font-size:9px;font-weight:500;color:#a9b3c4}
+
+
+/* Global leaderboard */
+.leaders{max-width:1200px;margin:0 auto}
+.leaders-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
+.leaders-heading h2{margin:10px 0 4px;letter-spacing:-1.7px}
+.leaders-heading p{margin:0;font-size:13px}
+.leaders-refresh{background:transparent;border:1px solid #454e5b;padding:12px 17px;color:#cbd2de;letter-spacing:1px;font-size:10px;font-weight:900;white-space:nowrap;transition:color .2s,border-color .2s,background .2s}
+.leaders-refresh:hover{border-color:#f3b547;background:#302b23;color:#ffbf55}
+.leaders-tabs{display:flex;gap:0;background:#171a20;border:1px solid #343a46;overflow-x:auto}
+.leaders-tabs button{flex:1;min-width:196px;border:0;border-bottom:2px solid transparent;background:transparent;color:#a3adbd;letter-spacing:.7px;font-size:11px;font-weight:900;padding:20px 16px;white-space:nowrap}
+.leaders-tabs button:hover{background:#252a32;color:#fff}
+.leaders-tabs button.selected{background:#282b2e;color:#ffbe51;border-bottom-color:#ffb642}
+.leaders-description{font-size:12px;margin:16px 0 28px;min-height:21px}
+.leaders-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0 28px}
+.leader-hero{position:relative;min-width:0;display:flex;align-items:center;flex-direction:column;text-align:center;background:linear-gradient(160deg,#252932,#181b22);padding:26px 12px 24px;border:1px solid #363e4a;border-top:3px solid #3b434f;transition:transform .2s,border-color .2s}
+.leader-hero:hover{transform:translateY(-3px);border-color:#bf954a}
+.leader-hero.place-1{border-top-color:#ffc45b;background:radial-gradient(circle at 50% 0%,#51402a,#24262d 56%,#191b20)}
+.leader-hero.place-2{border-top-color:#a3b5c7}
+.leader-hero.place-3{border-top-color:#b78054}
+.leader-medal{font-size:22px;color:#dfab59;line-height:1}
+.leader-position{font-size:10px;letter-spacing:2px;font-weight:900;color:#94a0b3;margin:12px 0 18px}
+.leader-avatar{width:55px;height:55px;border:1px solid #6d5e48;background:linear-gradient(135deg,#3f4148,#282c33);display:grid;place-items:center;font-size:25px;font-weight:900;color:#eac07d;margin-bottom:13px}
+.leader-hero strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
+.leader-score{color:#ffbf57;font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:12px}
+.leaders-table-wrap{overflow-x:auto;border:1px solid #373f4b;background:#1b1f26}
+.leaders-table{width:100%;min-width:770px;border-collapse:collapse}
+.leaders-table th{padding:18px 16px;background:#252a33;text-align:left;color:#9da9ba;letter-spacing:1.1px;font-size:10px;font-weight:900;white-space:nowrap}
+.leaders-table th.focus{color:#ffbe51}
+.leaders-table td{padding:15px 16px;border-top:1px solid #333946;font-size:13px}
+.leaders-table tbody tr:hover{background:#282e39}
+.leaders-place{font-variant-numeric:tabular-nums;color:#9cabbf;font-weight:900;letter-spacing:1px}
+.leaders-place-1{color:#ffcb63}.leaders-place-2{color:#bdcde0}.leaders-place-3{color:#ce9770}
+.leaders-user{white-space:nowrap;display:flex;gap:11px;align-items:center}
+.leader-small-avatar{display:inline-grid;place-items:center;width:33px;height:33px;background:#353d4b;color:#e3c28a;font-weight:900;flex-shrink:0}
+.leaders-num{white-space:nowrap;font-variant-numeric:tabular-nums;color:#d1d9e6}
+.leaders-num.focus{color:#ffbe51;font-weight:900}
+.leaders-num small{display:block;color:#8d9aaf;font-size:10px;margin-top:5px;font-weight:400}
+.leaders-empty{padding:64px 20px;text-align:center;color:#b5c1d3;background:#1b1f26;border:1px solid #353d49}
+.leaders-meta{margin-top:15px;text-align:right;color:#8290a3;font-size:11px}
+.leaders-footnote{color:#93a0b2;font-size:12px;padding:14px 0 28px;max-width:800px}
+header.top nav{flex-wrap:wrap;justify-content:center}
+@media(max-width:800px){header.top{gap:12px}.leaders-heading{align-items:start;flex-direction:column}.leaders-podium{gap:7px}.leader-hero{padding:20px 6px}.leader-score{font-size:13px}.leader-hero strong{font-size:12px}.leaders-tabs button{padding:15px 12px}}
+@media(max-width:460px){.leaders-podium{grid-template-columns:repeat(3,minmax(0,1fr))}.leader-avatar{height:43px;width:43px}.leader-score{font-size:12px}.leader-hero strong{font-size:11px}.leaders-heading h2{letter-spacing:-1px}}
