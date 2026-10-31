@@ -377,3 +377,37 @@ Code: `lib/events.ts`,
 `app/api/game/route.ts`, `app/api/admin/route.ts`,
 `app/admin/EventControls.tsx`, `app/components/EventBanner.tsx`.
 Integrationstest: `npm run test:events`.
+
+## Spielerlevel, XP und rotes Admin-Abzeichen
+
+Jeder User erhält `xp Int @default(0)` in PostgreSQL und startet
+ab **Level 1**. Das Spielerprofil zeigt Level und animierten
+XP-Fortschrittsbalken. Insgesamt gibt es **100 Level**.
+Der kumulative XP-Bedarf für Level `n` beträgt
+`80 × (n−1) × n / 2`; der Fortschritt und das Level werden
+stets aus gespeicherter XP berechnet (nicht vom Client gesetzt).
+Beispielsweise erreicht man Level 2 bei 80 XP und Level 3 bei 240 XP.
+
+XP-Gutschriften erfolgen gemeinsam mit der tatsächlichen serverseitigen
+Kistenöffnung: **5 XP pro Gratis-Kiste**; bezahlte Kisten erhalten
+`min(1200,25+floor(Basispreis-in-Cent/20))` XP pro Roll.
+Bei Bot-Battles, 1v1 und 2v2 erhält jeder echte Teilnehmer nach
+der vollständigen Battle-Auswertung XP für seine gespielten Runden,
+**unabhängig vom Sieg**. Kisten im offenen Battle vergeben noch keine
+XP; bei Abbruch ebenso nicht. Bei Mehrfachöffnungen wird die
+XP-Zahl multipliziert; gescheiterte Öffnungen zählen nicht.
+Luck-/Rabatt-Events verändern die XP-Formel nicht.
+Es werden nur virtuelle Level-/Spielwerte vergeben, keine
+Echtgeldpreise oder geldwerte Level-Boni.
+
+Neben dem Spielernamen erscheint ein goldener `LVL N`-Marker
+auf Startseite, in Navigation, globalem Chat und Bestenliste.
+Nur der verifizierte Administrator erhält zusätzlich das
+**rote ADMIN-Abzeichen**. Diese Rolle wird ausschließlich mit
+der Render-Umgebungsvariable `ADMIN_USER_ID` und der eingeloggten
+Konto-ID serverseitig verglichen, nicht aus Browser-Anfragen übernommen.
+
+Nach dem Render-Neustart fügt `db:push` automatisch `xp` für bestehende
+Konten hinzu. Ihre bisherigen Coins und Inventare bleiben erhalten;
+bereits vor der Einführung geöffnete Kisten vergeben keine
+nachträglichen XP. Integrationstest: `npm run test:levels`.
