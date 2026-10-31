@@ -1,9 +1,9 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-type Weapon={id:string;name:string;rarity:string;value:number;weight?:number;imageUrl?:string|null};
+type Weapon={id?:string;name?:string;rarity?:string;value:number;weight?:number;imageUrl?:string|null};
 export type BattleRoundVisual={
  case:{id:string;name:string;price:number;imageUrl?:string|null}|null;
- creatorDrop:Weapon|null;guestDrop:Weapon|null;position:number
+ creatorDrop:Weapon|null;guestDrop:Weapon|null;position:number;pool?:Weapon[]
 };
 const euro=(n:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n/100);
 const colors:Record<string,string>={COMMON:'#a4acb8',UNCOMMON:'#4aa8fc',RARE:'#a879ff',EPIC:'#ee6dd9',LEGENDARY:'#ff5c68',KNIFE:'#ffc253'};
@@ -82,7 +82,7 @@ export default function BattleOpeningAnimation({rounds,participants,onFinish}:{
  };
  if(!current?.creatorDrop||!current?.guestDrop)return null;
  // Each source case has a distinct pool, passed from the game catalog where possible.
- const pool=(current as BattleRoundVisual&{pool?:Weapon[]}).pool??[];
+ const pool=current.pool??[];
  return <div className="overlay battle-spin-overlay">
   <section className="battle-spin-modal" aria-label="Case Battle Rotationsanimation" role="dialog" aria-modal="true">
    <div className="eyebrow">CASE RUSH · BATTLE OPENING</div>
