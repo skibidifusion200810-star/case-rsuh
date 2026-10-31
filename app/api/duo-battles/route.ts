@@ -66,8 +66,10 @@ async function settleIfFull(tx:Prisma.TransactionClient,battleId:string){
  }
  // A bot participates in the reel/score, but it is not a registered user.
  await tx.opening.createMany({data:results.flatMap(r=>
-  r.draws.flatMap((item,index)=>members[index]?
-   [{userId:members[index],caseId:r.round.caseId,itemId:item.id}]:[])
+  r.draws.flatMap((item,index)=>{
+   const humanId=members[index];
+   return humanId?[{userId:humanId,caseId:r.round.caseId,itemId:item.id}]:[];
+  })
  )});
  const rewardRows=results.flatMap(r=>{
   const d=r.draws;
@@ -156,7 +158,7 @@ export async function POST(req:NextRequest){
     if(paid.count!==1)throw Error('Nicht genügend Guthaben');
     const assigned=await tx.battle.updateMany({
      where:{id:battleId,status:'WAITING',duo:true,[selectedSeat]:null,
-      duoBotSeats:{hasNone:[selectedSeat]}},
+      NOT:{duoBotSeats:{has:selectedSeat}}},
      data:{[selectedSeat]:user.id}
     });
     if(assigned.count!==1)throw Error('Teamplatz wurde bereits besetzt');
@@ -177,7 +179,7 @@ export async function POST(req:NextRequest){
     if(b.duoBotSeats.length>=2)throw Error('Maximal zwei Bots pro Duo-Battle');
     const reserved=await tx.battle.updateMany({
      where:{id:battleId,status:'WAITING',duo:true,[selectedSeat]:null,
-      duoBotSeats:{hasNone:[selectedSeat]}},
+      NOT:{duoBotSeats:{has:selectedSeat}}},
      data:{duoBotSeats:{push:selectedSeat}}
     });
     if(reserved.count!==1)throw Error('Teamplatz wurde bereits besetzt');
