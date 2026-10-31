@@ -191,7 +191,7 @@ export default function AdminPage(){
        <button type="submit" className="admin-primary" disabled={busy||!announcementText.trim()}>✦ AN ALLE SPIELER SENDEN</button>
       </form>
       <div className="admin-section-head"><h2>LETZTE ANKÜNDIGUNGEN</h2></div>
-      {announcements.map(a=><div key={a.id} className="admin-announcement-row"><div><strong>{a.message}</strong><small>{date(a.createdAt)} · Ende {date(a.expiresAt)} · {new Date(a.expiresAt)>new Date()?'LIVE':'ABGELAUFEN'}</small></div><button className="admin-small-danger" disabled={busy} onClick={()=>void mutate('removeAnnouncement',{announcementId:a.id},'Ankündigung entfernt','announcements')}>ENTFERNEN</button></div>)}
+      {announcements.map(a=><div key={a.id} className="admin-announcement-row"><div><strong>{a.message}</strong><small>{date(a.createdAt)} · Ende {date(a.expiresAt)} · {new Date(a.expiresAt).getTime()>Date.now()?'LIVE':'ABGELAUFEN'}</small></div><button className="admin-small-danger" disabled={busy} onClick={()=>void mutate('removeAnnouncement',{announcementId:a.id},'Ankündigung entfernt','announcements')}>ENTFERNEN</button></div>)}
      </section>}
      {tab==='users'&&<section className="admin-section">
       <div className="admin-section-head"><h2>BENUTZERKONTEN</h2><span>GUTHABEN · SPERREN</span></div>
