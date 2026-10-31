@@ -45,6 +45,10 @@ export async function GET(req:NextRequest){
      endsAt:event.endsAt.toISOString()}:null
    },{headers:noStore});
   }
+  if(view==='announcements'){
+   const announcements=await db.adminAnnouncement.findMany({orderBy:{createdAt:'desc'},take:30});
+   return NextResponse.json({announcements},{headers:noStore});
+  }
   if(view==='overview'){
    const [users,cases,openings,battles,chat,totals,lastActions]=await Promise.all([
     db.user.count(),db.case.count(),db.opening.count(),
@@ -61,7 +65,7 @@ export async function GET(req:NextRequest){
    const users=await db.user.findMany({
     where:q?usernameFilter(q):{},
     take:40,orderBy:{createdAt:'desc'},
-    select:{id:true,username:true,coins:true,isBanned:true,createdAt:true,openSlots:true,
+    select:{id:true,username:true,coins:true,isBanned:true,createdAt:true,openSlots:true,lastSeenAt:true,lastLoginAt:true,visitCount:true,
      _count:{select:{inventory:true,openings:true}}}
    });
    return NextResponse.json({users},{headers:noStore});
@@ -113,6 +117,27 @@ export async function POST(req:NextRequest){
   const input=await req.json() as Record<string,unknown>;
   if(!input||Array.isArray(input)||typeof input!=='object')return fail('Ungültige Anfrage');
   const action=typeof input.action==='string'?input.action:'';
+  if(action==='publishAnnouncement'){
+   const message=typeof input.message==='string'?input.message.trim():'';
+   const minutes=input.durationMinutes;
+   if(!message||message.length>500)return fail('Nachricht muss 1 bis 500 Zeichen enthalten');
+   if(typeof minutes!=='number'||![5,10,30,60,120,1440].includes(minutes))return fail('Ungültige Anzeigedauer');
+   const created=await db.$transaction(async tx=>{
+    const row=await tx.adminAnnouncement.create({data:{message,expiresAt:new Date(Date.now()+minutes*60000),createdById:actor.id}});
+    await log(tx,actor,'PUBLISH_ANNOUNCEMENT','ANNOUNCEMENT',row.id,{message,durationMinutes:minutes});return row;
+   });
+   return NextResponse.json({ok:true,announcement:created},{headers:noStore});
+  }
+  if(action==='removeAnnouncement'){
+   const id=typeof input.announcementId==='string'?input.announcementId:'';
+   const removed=await db.$transaction(async tx=>{
+    const existing=await tx.adminAnnouncement.findUnique({where:{id}});
+    if(!existing)throw Error('Ankündigung nicht gefunden');
+    await tx.adminAnnouncement.delete({where:{id}});
+    await log(tx,actor,'REMOVE_ANNOUNCEMENT','ANNOUNCEMENT',id,{});return id;
+   });
+   return NextResponse.json({ok:true,removed},{headers:noStore});
+  }
   if(action==='startEvent'){
    const discount=input.discountPercent,luck=input.luckMultiplier,duration=input.durationMinutes;
    if(typeof discount!=='number'||!Number.isInteger(discount)||discount<0||discount>90||discount%5!==0)
@@ -255,7 +280,7 @@ export async function POST(req:NextRequest){
    return fail('Gleichzeitige Änderung – bitte erneut versuchen',409);
   const message=e instanceof Error?e.message:'';
   const expected=['Ein Event läuft bereits. Bitte zuerst beenden.','Es läuft kein Event','Spieler nicht gefunden','Guthabenlimit überschritten','Nachricht nicht gefunden',
-   'Kiste nicht gefunden','Item nicht gefunden','Dieser Skin besitzt keine überprüften Bild- und Wertdaten',
+   'Kiste nicht gefunden','Ankündigung nicht gefunden','Item nicht gefunden','Dieser Skin besitzt keine überprüften Bild- und Wertdaten',
    'Die Kiste muss mindestens einen aktiven Gewinn behalten','Nur die kostenlose Kiste darf gratis sein'];
   console.error('Admin mutation:',e);
   return fail(expected.includes(message)?message:'Admin-Aktion fehlgeschlagen',400);
