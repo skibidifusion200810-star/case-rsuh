@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import type {Item,Prisma} from '@prisma/client';
 import {db} from '@/lib/db';
 import {qualifiesForGlobalDrop} from '@/lib/social';
+import {getLiveEvent,eventPrice,eventWeight,type LiveEvent} from '@/lib/events';
 import {createHash,randomInt} from 'node:crypto';
 
 export const dynamic='force-dynamic';
@@ -16,12 +17,13 @@ async function viewer(req:NextRequest){
  return s&&s.expiresAt>new Date()&&!s.user.isBanned?s.user:null;
 }
 function active(items:Item[]){return items.filter(x=>x.weight>0&&x.value>=1&&!!x.imageUrl)}
-function draw(items:Item[]){
- const total=items.reduce((a,b)=>a+b.weight,0);
+function draw(items:Item[],basePrice:number,event:LiveEvent|null){
+ const weighted=items.map(i=>({...i,weight:eventWeight(i,basePrice,event)}));
+ const total=weighted.reduce((a,b)=>a+b.weight,0);
  if(total<=0)throw Error('Kein Item verfügbar');
  let number=randomInt(total);
- for(const item of items){number-=item.weight;if(number<0)return item}
- return items[items.length-1];
+ for(const item of weighted){number-=item.weight;if(number<0)return item}
+ return weighted[weighted.length-1];
 }
 async function present(battles:BattleFull[],userId?:string){
  const userIds=[...new Set(battles.flatMap(x=>[x.creatorId,x.creatorPartnerId,x.guestId,x.guestPartnerId].filter((s):s is string=>!!s)))];
@@ -119,7 +121,8 @@ export async function POST(req:NextRequest){
     const selected=caseIds.map(id=>byId.get(id));
     if(selected.some(c=>!c||c.price<=0||active(c.items).length<2))
      throw Error('Mindestens eine ausgewählte Kiste ist nicht verfügbar');
-    const totalCost=selected.reduce((sum,c)=>sum+c!.price,0);
+    const event=await getLiveEvent(tx);
+    const totalCost=selected.reduce((sum,c)=>sum+eventPrice(c!.price,event),0);
     if(!Number.isSafeInteger(totalCost)||totalCost<=0)throw Error('Ungültiger Gesamtpreis');
     if(await tx.battle.count({where:{creatorId:user.id,status:'WAITING'}})>=3)
      throw Error('Du hast bereits 3 offene Battles');
@@ -128,13 +131,13 @@ export async function POST(req:NextRequest){
     const battle=await tx.battle.create({
      data:{
       creatorId:user.id,caseId:selected[0]!.id,totalCost,againstBot,
-      rounds:{create:selected.map((c,index)=>({position:index,caseId:c!.id,casePrice:c!.price}))}
+      rounds:{create:selected.map((c,index)=>({position:index,caseId:c!.id,casePrice:eventPrice(c!.price,event)}))}
      },include:{rounds:true}
     });
     if(!againstBot)return battle;
     const results=selected.map((c,index)=>({
      round:battle.rounds.find(r=>r.position===index)!,caseId:c!.id,
-     a:draw(active(c!.items)),b:draw(active(c!.items))
+     a:draw(active(c!.items),c!.price,event),b:draw(active(c!.items),c!.price,event)
     }));
     const sumA=results.reduce((sum,r)=>sum+r.a.value,0);
     const sumB=results.reduce((sum,r)=>sum+r.b.value,0);
@@ -178,11 +181,12 @@ export async function POST(req:NextRequest){
     const lookup=new Map(cases.map(c=>[c.id,c]));
     if(ids.some(id=>!lookup.has(id)||active(lookup.get(id)!.items).length<2))
      throw Error('Kiste nicht verfügbar');
+    const event=await getLiveEvent(tx);
     const totalCost=b.totalCost||ids.reduce((sum,id)=>sum+lookup.get(id)!.price,0);
     const paid=await tx.user.updateMany({where:{id:user.id,coins:{gte:totalCost}},data:{coins:{decrement:totalCost}}});
     if(paid.count!==1)throw Error('Nicht genügend Guthaben');
     const results=ids.map((id,index)=>({
-     round:rounds[index],caseId:id,a:draw(active(lookup.get(id)!.items)),b:draw(active(lookup.get(id)!.items))
+     round:rounds[index],caseId:id,a:draw(active(lookup.get(id)!.items),lookup.get(id)!.price,event),b:draw(active(lookup.get(id)!.items),lookup.get(id)!.price,event)
     }));
     const aTotal=results.reduce((sum,r)=>sum+r.a.value,0);
     const bTotal=results.reduce((sum,r)=>sum+r.b.value,0);
