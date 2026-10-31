@@ -41,6 +41,7 @@ model Item {
   imageUrl String?
   priceOrigin String @default("GAME")
   marketHashName String?
+  priceCheckedAt DateTime?
   caseId String
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   inventory InventoryItem[]
@@ -52,6 +53,7 @@ model InventoryItem {
   itemId String
   item Item @relation(fields: [itemId], references: [id])
   soldAt DateTime?
+  valueAtDrop Int?
   createdAt DateTime @default(now())
 }
 model Opening {

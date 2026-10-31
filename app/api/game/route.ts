@@ -16,7 +16,7 @@ const safeUser=(u:{id:string,username:string,coins:number,starterClaimed:boolean
 export async function GET(req:NextRequest){
  try{
   const cmd=req.nextUrl.searchParams.get('action')||'cases';
-  if(cmd==='cases')return NextResponse.json({cases:await db.case.findMany({include:{items:true},orderBy:{price:'asc'}})});
+  if(cmd==='cases')return NextResponse.json({cases:await db.case.findMany({include:{items:{where:{weight:{gt:0},value:{gt:1},imageUrl:{not:null}}}},orderBy:{price:'asc'}})});
   const u=await user(req);
   if(cmd==='me')return NextResponse.json({user:u?safeUser(u):null});
   if(cmd==='inventory'){
@@ -64,6 +64,8 @@ export async function POST(req:NextRequest){
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
+    const eligible=c.items.filter(i=>i.weight>0&&i.value>1&&!!i.imageUrl);
+    if(!eligible.length)throw new Error('Keine überprüften Gewinne verfügbar');
     if(c.price===0){
      const changed=await tx.user.updateMany({where:{id:u.id,starterClaimed:false},data:{starterClaimed:true}});
      if(changed.count!==1)throw new Error('Starterkiste bereits geöffnet');
@@ -71,11 +73,11 @@ export async function POST(req:NextRequest){
      const charged=await tx.user.updateMany({where:{id:u.id,coins:{gte:c.price}},data:{coins:{decrement:c.price}}});
      if(charged.count!==1)throw new Error('Nicht genügend Coins');
     }
-    const weight=c.items.reduce((s,i)=>s+i.weight,0);
+    const weight=eligible.reduce((s,i)=>s+i.weight,0);
     let roll=randomInt(weight);
-    let selected=c.items[c.items.length-1];
-    for(const item of c.items){roll-=item.weight;if(roll<0){selected=item;break}}
-    const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id}});
+    let selected=eligible[eligible.length-1];
+    for(const item of eligible){roll-=item.weight;if(roll<0){selected=item;break}}
+    const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value}});
     await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
     return {item:selected,inventoryId:inv.id};
    },{isolationLevel:'Serializable'});
@@ -89,8 +91,9 @@ export async function POST(req:NextRequest){
     if(!inv||inv.ownerId!==u.id||inv.soldAt)throw new Error('Item nicht verfügbar');
     const claimed=await tx.inventoryItem.updateMany({where:{id:inventoryId,ownerId:u.id,soldAt:null},data:{soldAt:new Date()}});
     if(claimed.count!==1)throw new Error('Bereits verkauft');
-    const updated=await tx.user.update({where:{id:u.id},data:{coins:{increment:inv.item.value}}});
-    return {coins:updated.coins,value:inv.item.value};
+    const paidValue=inv.valueAtDrop??inv.item.value;
+    const updated=await tx.user.update({where:{id:u.id},data:{coins:{increment:paidValue}}});
+    return {coins:updated.coins,value:paidValue};
    },{isolationLevel:'Serializable'});
    return NextResponse.json(result);
   }
@@ -98,7 +101,7 @@ export async function POST(req:NextRequest){
  }catch(e){
   console.error('CASE RUSH API:',e);
   const message=e instanceof Error?e.message:'';
-  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft')return fail(message);
+  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar')return fail(message);
   if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2002')return fail('Dieser Benutzername ist bereits vergeben',409);
   if(typeof e==='object'&&e!==null&&'code' in e&&String(e.code).startsWith('P10'))return fail('Datenbank momentan nicht erreichbar. Bitte später erneut versuchen.',503);
   return fail('Aktion fehlgeschlagen. Bitte prüfe die Eingaben und probiere es erneut.',500);
