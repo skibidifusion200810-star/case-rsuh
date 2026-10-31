@@ -2,6 +2,7 @@
 
 import {useEffect,useState} from 'react';
 import type {LeaderboardCategory,LeaderboardEntry,LeaderboardResult} from '@/lib/leaderboard';
+import PlayerIdentity from './PlayerIdentity';
 
 const euros=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
 const number=(v:number)=>new Intl.NumberFormat('de-DE').format(v);
@@ -63,7 +64,7 @@ export default function Leaderboard(){
       <div className="leader-medal">{u.rank===1?'★':u.rank===2?'◆':'●'}</div>
       <div className="leader-position">PLATZ {String(u.rank).padStart(2,'0')}</div>
       <div className="leader-avatar" aria-hidden="true">{u.username[0]?.toUpperCase()}</div>
-      <strong title={u.username}>{u.username}</strong>
+      <PlayerIdentity username={u.username} xp={u.xp} isAdmin={u.isAdmin}/>
       <div className="leader-score">{score(u,category)}</div>
      </div>)}
     </div>
@@ -76,7 +77,7 @@ export default function Leaderboard(){
       </tr></thead>
       <tbody>{users.map(u=><tr key={u.username}>
        <td><span className={'leaders-place leaders-place-'+u.rank}>#{String(u.rank).padStart(2,'0')}</span></td>
-       <td className="leaders-user"><span className="leader-small-avatar">{u.username[0]?.toUpperCase()}</span><strong>{u.username}</strong></td>
+       <td className="leaders-user"><span className="leader-small-avatar">{u.username[0]?.toUpperCase()}</span><PlayerIdentity username={u.username} xp={u.xp} isAdmin={u.isAdmin} compact/></td>
        <td className={'leaders-num '+(category==='balance'?'focus':'')}>{euros(u.balanceCents)}</td>
        <td className={'leaders-num '+(category==='inventory'?'focus':'')}>{euros(u.inventoryCents)}<small>{number(u.inventoryItems)} Items</small></td>
        <td className={'leaders-num '+(category==='openings'?'focus':'')}>{number(u.totalOpenings)}<small>{number(u.paidOpenings)} bezahlt · {number(u.freeOpenings)} gratis</small></td>

@@ -22,10 +22,11 @@ export async function GET(req:NextRequest){
   if(feed==='chat'){
    const latest=await db.chatMessage.findMany({
     orderBy:[{createdAt:'desc'},{id:'desc'}],take:50,
-    select:{id:true,body:true,createdAt:true,user:{select:{username:true}}}
+    select:{id:true,body:true,createdAt:true,user:{select:{id:true,username:true,xp:true}}}
    });
    return NextResponse.json({messages:latest.reverse().map(m=>({
-    id:m.id,username:m.user.username,body:m.body,createdAt:m.createdAt
+    id:m.id,username:m.user.username,xp:m.user.xp,
+    isAdmin:process.env.ADMIN_USER_ID===m.user.id,body:m.body,createdAt:m.createdAt
    }))},{headers:noStore});
   }
   if(feed==='wallet'){

@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import {useEffect,useState} from 'react';
 import './home.css';
+import PlayerIdentity from './components/PlayerIdentity';
 
 type CasePreview={id:string;name:string;slug:string;price:number;imageUrl?:string|null;items?:{name:string;imageUrl?:string|null}[]};
-type Viewer={username:string;coins:number;isAdmin?:boolean}|null;
+type Viewer={username:string;coins:number;xp:number;isAdmin?:boolean}|null;
 const euros=(value:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value/100);
 const sections=[
  {href:'/cases',n:'01',label:'KISTEN',description:'Neun Kisten. Eigene Drops. Deine nächste Öffnung.',detail:'ARSENAL',icon:'◈'},
@@ -60,7 +61,7 @@ export default function Home(){
     <button type="button" className="landing-social-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
    </nav>
    <div className="landing-account">
-    {me?<><span className="landing-balance">{euros(me.coins)}</span><Link href="/inventory" className="landing-user">{me.username}</Link></>:
+    {me?<><span className="landing-balance">{euros(me.coins)}</span><Link href="/inventory" className="landing-user"><PlayerIdentity username={me.username} xp={me.xp} isAdmin={me.isAdmin} compact/></Link></>:
       <Link href="/cases?auth=login" className="landing-signin">ANMELDEN</Link>}
     <Link className="landing-header-cta" href="/cases">ZUM SPIEL <span>↗</span></Link>
    </div>

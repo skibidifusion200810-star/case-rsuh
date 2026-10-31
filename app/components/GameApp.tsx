@@ -7,10 +7,11 @@ import Leaderboard from './Leaderboard';
 import BattleArena from './BattleArena';
 import UpgradePanel from './UpgradePanel';
 import TradingHub from './TradingHub';
+import PlayerIdentity,{XPProgress} from './PlayerIdentity';
 type Item={id:string,name:string,rarity:string,value:number,weight:number,imageUrl?:string|null,priceOrigin?:string,priceCheckedAt?:string|null,priceSourceUrl?:string|null};
 type Case={id:string,name:string,slug:string,price:number,originalPrice?:number,imageUrl?:string|null,items:Item[]};
 type Inv={id:string,item:Item,valueAtDrop?:number|null,isDemo?:boolean,tradeLockId?:string|null,mergedCount:number};
-type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean,isAdmin?:boolean};
+type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean,isAdmin?:boolean,xp:number,level:number};
 const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
 const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':i.priceOrigin==='CSMONEY_MARKET_REFERENCE'?'Externe Marktpreisreferenz (Stand '+date+')':'Kein bestätigter Marktpreis'};
 const chance=(value:number,total:number)=>{
@@ -124,7 +125,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
    {me?.isAdmin&&<Link href="/admin" className="game-nav-link game-admin-link">ADMIN ↗</Link>}
    <button type="button" className="game-nav-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
   </nav>
-  <div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><strong>{me.username}</strong><button onClick={()=>void act('logout')}>ABMELDEN</button></>:<button className="primary" onClick={()=>{setFormMode('login');setFormError('');setLogin(true)}}>ANMELDEN</button>}</div>
+  <div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><div className="cr-header-player"><PlayerIdentity username={me.username} xp={me.xp} isAdmin={me.isAdmin}/><XPProgress xp={me.xp}/></div><button onClick={()=>void act('logout')}>ABMELDEN</button></>:<button className="primary" onClick={()=>{setFormMode('login');setFormError('');setLogin(true)}}>ANMELDEN</button>}</div>
  </header>
  <section className="game-page-intro">
   <div className="game-intro-inner">

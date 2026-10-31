@@ -5,6 +5,8 @@ export type LeaderboardCategory='balance'|'inventory'|'openings';
 export type LeaderboardEntry={
  rank:number;
  username:string;
+ xp:number;
+ isAdmin:boolean;
  balanceCents:number;
  inventoryCents:number;
  inventoryItems:number;
@@ -17,6 +19,8 @@ export type LeaderboardResult={
  rankings:Record<LeaderboardCategory,LeaderboardEntry[]>;
 };
 type RawRank={
+ userId:string;
+ xp:number;
  username:string;
  balanceCents:bigint;
  inventoryCents:bigint;
@@ -54,7 +58,7 @@ export async function loadLeaderboard(db:PrismaClient,limit=20):Promise<Leaderbo
   GROUP BY o."userId"
  ),
  player_stats AS (
-  SELECT u.username,u.coins::bigint AS "balanceCents",
+  SELECT u.id AS "userId",u.xp,u.username,u.coins::bigint AS "balanceCents",
          COALESCE(i."inventoryCents",0::bigint) AS "inventoryCents",
          COALESCE(i."inventoryItems",0::bigint) AS "inventoryItems",
          COALESCE(o."totalOpenings",0::bigint) AS "totalOpenings",
@@ -84,7 +88,9 @@ export async function loadLeaderboard(db:PrismaClient,limit=20):Promise<Leaderbo
  WHERE "balanceRank"<=${cap} OR "inventoryRank"<=${cap} OR "openingsRank"<=${cap}
  `;
  const toEntry=(row:RawRank,rank:number):LeaderboardEntry=>({
-  rank,username:row.username,balanceCents:Number(row.balanceCents),
+  rank,username:row.username,xp:row.xp,
+  isAdmin:process.env.ADMIN_USER_ID===row.userId,
+  balanceCents:Number(row.balanceCents),
   inventoryCents:Number(row.inventoryCents),
   inventoryItems:Number(row.inventoryItems),
   totalOpenings:Number(row.totalOpenings),

@@ -2,9 +2,10 @@
 
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import Link from 'next/link';
+import PlayerIdentity from './PlayerIdentity';
 
 type RareDrop={id:string;username:string;itemName:string;rarity:string;value:number;imageUrl?:string|null;createdAt:string;source:string};
-type ChatRow={id:string;username:string;body:string;createdAt:string};
+type ChatRow={id:string;username:string;xp:number;isAdmin:boolean;body:string;createdAt:string};
 type GiftLog={id:string;recipient:string;amount:number;createdAt:string};
 type Wallet={username:string;balance:number;nextAt:string|null;transfers:GiftLog[]};
 const euro=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
@@ -170,7 +171,7 @@ export default function GlobalSocial(){
       {loading?<p>Chat wird geladen …</p>:messages.length===0?<p>Noch keine Nachrichten. Sei der Erste!</p>:
        messages.map(m=><div className="cr-chat-line" key={m.id}>
         <div className="cr-chat-avatar" aria-hidden="true">{m.username[0]?.toUpperCase()}</div>
-        <div><div className="cr-chat-line-head"><strong>{m.username}</strong><time dateTime={m.createdAt}>{new Date(m.createdAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</time></div>
+        <div><div className="cr-chat-line-head"><PlayerIdentity username={m.username} xp={m.xp} isAdmin={m.isAdmin} compact/><time dateTime={m.createdAt}>{new Date(m.createdAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</time></div>
          <p>{m.body}</p></div>
        </div>)}
       <div ref={chatEnd}/>
