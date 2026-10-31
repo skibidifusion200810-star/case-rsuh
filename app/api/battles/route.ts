@@ -54,20 +54,33 @@ async function present(battles:BattleFull[],userId?:string){
   }];
   const creatorTotal=rounds.reduce((sum,r)=>sum+(r.creatorDrop?.value??0)+(r.creatorPartnerDrop?.value??0),0);
   const guestTotal=rounds.reduce((sum,r)=>sum+(r.guestDrop?.value??0)+(r.guestPartnerDrop?.value??0),0);
+  const isBot=(seat:string)=>b.duoBotSeats.includes(seat);
+  const participant=(id:string|null,seat:string):string|null=>
+   isBot(seat)?'RUSH BOT':id?names.get(id)??'Spieler':null;
+  const partnerA=participant(b.creatorPartnerId,'creatorPartnerId');
+  const memberB=participant(b.guestId,'guestId');
+  const partnerB=participant(b.guestPartnerId,'guestPartnerId');
+  const winningTeam=b.winnerId?
+   (b.winnerId===b.creatorId||(b.creatorPartnerId!==null&&b.winnerId===b.creatorPartnerId)?
+    'creator':'guest'):null;
+  const winnerIds=winningTeam==='creator'?[b.creatorId,b.creatorPartnerId]:
+   winningTeam==='guest'?[b.guestId,b.guestPartnerId]:[];
+  const duoAwards=winnerIds.filter((id):id is string=>!!id)
+   .reduce((sum,id)=>sum+(awards.get(b.id+':'+id)??0),0);
   return {
    id:b.id,status:b.status,againstBot:b.againstBot,duo:b.duo,
-   creatorPartner:b.creatorPartnerId?names.get(b.creatorPartnerId)??'Spieler':null,
-   guestPartner:b.guestPartnerId?names.get(b.guestPartnerId)??'Spieler':null,
-   creatorTeam:[names.get(b.creatorId)??'Spieler',b.creatorPartnerId?names.get(b.creatorPartnerId)??'Spieler':null],
-   guestTeam:[b.guestId?names.get(b.guestId)??'Spieler':null,b.guestPartnerId?names.get(b.guestPartnerId)??'Spieler':null],
+   duoBotSeats:b.duoBotSeats,
+   creatorPartner:partnerA,
+   guestPartner:partnerB,
+   creatorTeam:[names.get(b.creatorId)??'Spieler',partnerA],
+   guestTeam:[memberB,partnerB],
    creator:names.get(b.creatorId)??'Spieler',
-   guest:b.againstBot?'RUSH BOT':b.guestId?names.get(b.guestId)??'Gast':null,
+   guest:b.againstBot?'RUSH BOT':memberB,
    viewerRole:userId===b.creatorId?'creator':userId===b.creatorPartnerId?'creatorPartner':userId===b.guestId?'guest':userId===b.guestPartnerId?'guestPartner':'spectator',
-   winner:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
+   winner:b.duo?winningTeam:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
    case:casesById.get(b.caseId)??null,
-   awardedItemCount:b.winnerId&&b.winnerId!=='BOT'?(b.duo?
-    (awards.get(b.id+':'+b.winnerId)??0)+(awards.get(b.id+':'+(b.winnerId===b.creatorId?b.creatorPartnerId:b.guestPartnerId))??0):
-    awards.get(b.id+':'+b.winnerId)??0):0,
+   awardedItemCount:b.duo?duoAwards:b.winnerId&&b.winnerId!=='BOT'?
+    awards.get(b.id+':'+b.winnerId)??0:0,
    viewerAwardCount:userId?awards.get(b.id+':'+userId)??0:0,
    totalCost:b.totalCost||rounds.reduce((sum,r)=>sum+r.casePrice,0),
    rounds,creatorTotal,guestTotal,
