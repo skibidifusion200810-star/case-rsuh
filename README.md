@@ -55,3 +55,29 @@ Gewinn oder Drop-Chance. Die Anzahl der sichtbaren Felder bestimmt keine Chance.
 Achtung: Die tatsächlichen Drop-Chancen werden aus den **verfügbaren und bepreisten**
 Items berechnet. Fehlt eine überprüfte Marktpreis-/Bildquelle, wird das betreffende Item
 deaktiviert. Die erste Version enthält bewusst keinen Echtgeldhandel.
+
+## Globale Bestenliste
+
+Über **BESTENLISTE** in der Navigation können Besucher ohne Anmeldung die besten 20 Spieler
+in drei Ranglisten sehen:
+
+- **Meistes Guthaben** – nach dem aktuellen virtuellen Euro-Guthaben (absteigend).
+- **Wertvollstes Inventar** – Summe der noch nicht verkauften, verkaufbaren Items zum
+  gespeicherten **Wert bei der Ziehung**. Kostenlose Demo-Sammlerstücke (`isDemo=true`)
+  und bereits verkaufte Items zählen nicht.
+- **Meiste Kistenöffnungen** – alle gespeicherten erfolgreichen Öffnungen zusammen,
+  auch die unbegrenzte Gratis-Kiste. Zusätzlich werden kostenlose und bezahlte
+  Öffnungen getrennt angezeigt.
+
+Jede Rangliste zeigt Benutzername, Guthaben, Inventarwert, Inventar-Itemanzahl und
+Kistenöffnungen. Die öffentliche, **nur lesbare** API liegt unter `/api/leaderboard`.
+Sie liefert keine Passwörter, Session-Tokens oder Benutzer-UUIDs. Das Ranking kommt
+direkt aus PostgreSQL und aktualisiert sich im Browser alle **30 Sekunden**, sowie
+beim manuellen Neuladen. Es speichert keine zusätzliche Punktetabelle, deshalb
+muss niemand Rankings nachträglich synchronisieren.
+
+Hinweis: Die Rangliste für Kistenöffnungen lässt sich durch häufiges Spielen der
+kostenlosen Kiste steigern. Bei Gleichstand entscheiden andere Statistiken und
+danach der Benutzername; es gibt kein Echtgeld oder auszahlbare Preise.
+
+Tests: `npm run test:leaderboard` (mit laufender Testdatenbank und Seed).
