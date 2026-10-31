@@ -5,7 +5,7 @@ type Case={id:string,name:string,slug:string,price:number,imageUrl?:string|null,
 type Inv={id:string,item:Item,valueAtDrop?:number|null};
 type User={id:string,username:string,coins:number,starterClaimed:boolean};
 const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
-const priceNote=(i:Item)=>i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (via Marktdatenanbieter)':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Älterer Preis-Snapshot – NICHT CS.MONEY':'Nicht als Marktpreis bestätigt';
+const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':'Kein bestätigter Marktpreis'};
 const fmt=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
 function AssetImage({src,alt,kind}:{src?:string|null,alt:string,kind:'case'|'item'}){
  const [broken,setBroken]=useState(false);
