@@ -100,7 +100,7 @@ async function main(){
  const message=await db.chatMessage.create({data:{userId:player.id,body:'A test message to moderate'}});
  assert.equal((await post(adminPOST,'/api/admin',{
   action:'deleteMessage',messageId:message.id
- },player.cookie)).status,403);
+ },again.cookie)).status,403);
  assert.equal((await post(adminPOST,'/api/admin',{
   action:'deleteMessage',messageId:message.id
  },admin.cookie)).status,200);
