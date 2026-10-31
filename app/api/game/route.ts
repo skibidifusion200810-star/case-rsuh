@@ -3,6 +3,7 @@ import {db} from '@/lib/db';
 import {randomBytes,createHash,randomInt} from 'node:crypto';
 import argon2 from 'argon2';
 import {priceForUpgrade} from '@/lib/upgrades';
+import {qualifiesForGlobalDrop} from '@/lib/social';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 async function user(req:NextRequest){
@@ -106,6 +107,13 @@ export async function POST(req:NextRequest){
       ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:false
      }});
      await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
+     if(qualifiesForGlobalDrop(selected)){
+      await tx.rareDropEvent.create({data:{
+       username:u.username,itemName:selected.name,rarity:selected.rarity,
+       value:selected.value,imageUrl:selected.imageUrl,source:'CASE',
+       inventoryItemId:inv.id
+      }});
+     }
      results.push({item:selected,inventoryId:inv.id,isDemo:false});
     }
     return results;
