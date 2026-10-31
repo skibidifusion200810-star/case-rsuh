@@ -21,7 +21,7 @@ async function main(){
   await db.inventoryItem.createMany({data:[
    {ownerId:a.id,itemId:item.id,valueAtDrop:50000,isDemo:false},
    {ownerId:a.id,itemId:item.id,valueAtDrop:999999,isDemo:false,soldAt:new Date()},
-   {ownerId:a.id,itemId:item.id,valueAtDrop:999999,isDemo:true},
+   {ownerId:a.id,itemId:item.id,valueAtDrop:1200,isDemo:true},
    {ownerId:b.id,itemId:item.id,valueAtDrop:120000,isDemo:false},
    {ownerId:b.id,itemId:item.id,valueAtDrop:10000,isDemo:false,soldAt:new Date()}
   ]});
@@ -39,8 +39,8 @@ async function main(){
   const inventory=rows('inventory');
   const openings=rows('openings');
   assert.equal(balance.get(a.username)?.balanceCents,345000,'wallet balance must match');
-  assert.equal(inventory.get(a.username)?.inventoryCents,50000,'exclude sold and demo item values');
-  assert.equal(inventory.get(a.username)?.inventoryItems,1,'only one sellable item remains');
+  assert.equal(inventory.get(a.username)?.inventoryCents,51200,'include historical free item and exclude sold');
+  assert.equal(inventory.get(a.username)?.inventoryItems,2,'both free and paid unsold items counted');
   assert.equal(inventory.get(b.username)?.inventoryCents,120000,'use value at opening, not today price');
   assert.equal(inventory.get(c.username)?.inventoryCents,0,'zero inventory should be visible');
   assert.equal(openings.get(a.username)?.totalOpenings,3,'all openings counted');
@@ -56,7 +56,7 @@ async function main(){
    assert.deepEqual(list.map(x=>x.rank),Array.from({length:list.length},(_,i)=>i+1),'rank is stable');
    assert.ok(list.every(x=>!('passwordHash' in x)&&!('id' in x)),'never expose secrets or IDs');
   }
-  console.log('PASS leaderboard wallet, unsold inventory, free exclusions, openings, rankings and data privacy');
+  console.log('PASS leaderboard balances, free inventory, openings, ranking and privacy');
  }finally{
   if(ids.length){
    await db.opening.deleteMany({where:{userId:{in:ids}}});

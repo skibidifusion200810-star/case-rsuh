@@ -39,12 +39,10 @@ Die neun Kisten kosten **0, 1, 5, 20, 75, 250, 500, 1.000 und 2.000 virtuelle Eu
 Jede Kiste hat einen eigenen gewichteten Item-Pool (siehe `lib/case-config.ts`).
 Teurere Kisten haben steigende Chancen auf Epic, Legendary und Knife. In der teuersten
 2.000-€-Kiste gibt es **weder Common (grau) noch Uncommon (blau)**. 
-Die kostenlose `First Drop` hat nur **0,05 % Grundwahrscheinlichkeit für Rare oder höher**.
+Die kostenlose `First Drop` hat nur **0,0501 % Grundwahrscheinlichkeit für Rare oder höher**.
 
 **Die kostenlose Kiste darf beliebig oft geöffnet werden**, mit 2,5 Sekunden
-serverseitiger Anti-Spam-Pause zwischen den Käufen. Da das Öffnen nichts kostet, bleiben
-diese Gewinne **nicht verkaufbare Sammlerstücke**; sonst könnte jeder durch unbegrenzt
-kostenlose Öffnungen das virtuelle Guthaben unendlich erhöhen. Kostenpflichtige
+serverseitiger Anti-Spam-Pause zwischen den Käufen. Auch Gewinne der kostenlosen Kiste sind **sofort und im Inventar verkaufbar**, um virtuelles Guthaben für kostenpflichtige Kisten zu erspielen. Kostenpflichtige
 Kistengewinne lassen sich weiterhin sofort zum gespeicherten virtuellen Wert verkaufen.
 
 Die horizontal scrollende **links-nach-rechts**-Animation startet erst nach serverseitigem
@@ -63,8 +61,7 @@ in drei Ranglisten sehen:
 
 - **Meistes Guthaben** – nach dem aktuellen virtuellen Euro-Guthaben (absteigend).
 - **Wertvollstes Inventar** – Summe der noch nicht verkauften, verkaufbaren Items zum
-  gespeicherten **Wert bei der Ziehung**. Kostenlose Demo-Sammlerstücke (`isDemo=true`)
-  und bereits verkaufte Items zählen nicht.
+  gespeicherten **Wert bei der Ziehung**. Kostenlose, noch unverkaufte Gewinne zählen ebenfalls zum Inventarwert; verkaufte Items nicht.
 - **Meiste Kistenöffnungen** – alle gespeicherten erfolgreichen Öffnungen zusammen,
   auch die unbegrenzte Gratis-Kiste. Zusätzlich werden kostenlose und bezahlte
   Öffnungen getrennt angezeigt.
@@ -81,3 +78,14 @@ kostenlosen Kiste steigern. Bei Gleichstand entscheiden andere Statistiken und
 danach der Benutzername; es gibt kein Echtgeld oder auszahlbare Preise.
 
 Tests: `npm run test:leaderboard` (mit laufender Testdatenbank und Seed).
+
+## Verifizierte günstige Skins (kein erfundener Cent-Wert)
+Für die häufigen günstigen Drops werden ausdrücklich die **Field-Tested**-Varianten verwendet, keine beliebigen Factory-New-Items. Am 29. Oktober 2026 wurden folgende niedrige EUR-Listings bei CS.MONEY über Veriloot überprüft:
+- P250 | Sand Dune (Field-Tested): 0,02 € — https://veriloot.gg/en/skins/p250/sand-dune/field-tested
+- MP9 | Sand Dashed (Field-Tested): ca. 0,01 € — https://veriloot.gg/en/skins/mp9/sand-dashed
+- SCAR-20 | Sand Mesh (Field-Tested): 0,01 € — https://veriloot.gg/en/skins/scar-20/sand-mesh/field-tested
+- MP7 | Army Recon (Field-Tested): 0,02 € — https://veriloot.gg/en/skins/mp7/army-recon/field-tested
+
+Die genaue Quelle, EUR-Cent-Werte, Variante und Datierung stehen in `lib/market-reference.ts`. Die Zahlen sind **historische Angebotsreferenzen**; sie aktualisieren sich nicht in Echtzeit und sind keine Echtgeld-Auszahlungen. Extern beobachtete Marktpreise können sich ändern. Bei einer konfigurierten Live-Preisdatenquelle werden aktuelle genau zugeordnete Werte bevorzugt. Andere, nicht verifizierte Werte werden nicht erfunden.
+
+Bestehende gesammelte Gegenstände werden im Inventar zum damals gespeicherten Wert verkauft. Die kostenlose Kiste bleibt unbegrenzt nutzbar; der 2,5-Sekunden-Cooldown schützt vor schnellen automatisierten Anfragen.

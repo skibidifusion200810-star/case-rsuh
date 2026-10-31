@@ -37,6 +37,15 @@ assert.equal(freeGold[0].name,'Karambit | Doppler');
 assert.equal(freeGold[0].weight,1,'The free gold knife must be one weight out of 1,000,000');
 assert.equal(freeGold[0].weight/free.items.reduce((sum,item)=>sum+item.weight,0),1/1_000_000,
  'Gold knife chance must be 1 in 1,000,000 (0.0001%)');
+// Real source-backed one/two-cent drops; not a made-up price for expensive skins.
+for(const slug of ['first-drop','urban-supply','neon-circuit','crimson-strike']){
+ const c=caseDefs.find(c=>c.slug===slug)!;
+ const cheap=['P250 | Sand Dune','MP9 | Sand Dashed','SCAR-20 | Sand Mesh','MP7 | Army Recon'];
+ const weight=c.items.filter(i=>cheap.includes(i.name)).reduce((sum,i)=>sum+i.weight,0);
+ assert.ok(weight/c.items.reduce((sum,i)=>sum+i.weight,0)>=0.5,
+  'At least half of cheap case rolls are verified low-price skins: '+slug);
+}
+
 const freeRare=free.items.filter(x=>['RARE','EPIC','LEGENDARY','KNIFE'].includes(x.rarity))
  .reduce((a,b)=>a+b.weight,0)/1_000_000;
 assert.ok(freeRare<=0.001,'Free case must have <=0.1% chance for Rare+');
