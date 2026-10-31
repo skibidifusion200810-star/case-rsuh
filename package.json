@@ -8,7 +8,8 @@
     "start": "next start",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "start:production": "tsx server/production.ts"
+    "start:production": "tsx server/production.ts",
+    "audit:catalog": "tsx scripts/audit-catalog.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
