@@ -37,6 +37,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
  async function get(url:string){const r=await fetch(url,{cache:'no-store'});if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'Serververbindung fehlgeschlagen ('+r.status+')')}return r.json()}
  async function refresh(){try{const [c,m]=await Promise.all([get('/api/game?action=cases'),get('/api/game?action=me')]);setCases(c.cases);setMe(m.user);setInventory(m.user?(await get('/api/game?action=inventory')).items:[]);setError('')}catch(e){setError(e instanceof Error?e.message:String(e))}}
  useEffect(()=>{void refresh();setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)},[]);
+ useEffect(()=>{const mode=new URLSearchParams(window.location.search).get('auth');if(mode==='login'||mode==='register'){setFormMode(mode);setLogin(true)}},[]);
  useEffect(()=>{
   const showInventory=()=>{window.location.assign('/inventory')};
   window.addEventListener('case-rush-show-inventory',showInventory);
