@@ -12,7 +12,7 @@ async function user(req:NextRequest){
  return session.user;
 }
 function fail(error:string,status=400){return NextResponse.json({error},{status})}
-const safeUser=(u:{id:string,username:string,coins:number,starterClaimed:boolean})=>({id:u.id,username:u.username,coins:u.coins,starterClaimed:u.starterClaimed});
+const safeUser=(u:{id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean})=>({id:u.id,username:u.username,coins:u.coins,openSlots:u.openSlots,starterClaimed:u.starterClaimed});
 export async function GET(req:NextRequest){
  try{
   const cmd=req.nextUrl.searchParams.get('action')||'cases';
@@ -58,36 +58,60 @@ export async function POST(req:NextRequest){
    const res=NextResponse.json({ok:true});res.cookies.delete(cookie);return res;
   }
   const u=await user(req);if(!u)return fail('Bitte anmelden',401);
+  if(action==='upgrade'){
+   const tier=typeof b.tier==='number'?b.tier:0;
+   const prices:Record<number,number>={2:100,4:1000,8:1500,10:2000};
+   const cost=prices[tier];
+   if(!cost)return fail('Ungültige Upgrade-Stufe');
+   const result=await db.user.updateMany({
+    where:{id:u.id,openSlots:{lt:tier},coins:{gte:cost}},
+    data:{openSlots:tier,coins:{decrement:cost}}
+   });
+   if(!result.count)return fail('Upgrade bereits vorhanden oder nicht genügend Guthaben');
+   return NextResponse.json({user:safeUser(await db.user.findUniqueOrThrow({where:{id:u.id}}))});
+  }
   if(action==='open'){
    const caseId=typeof b.caseId==='string'?b.caseId:'';
    if(!caseId)return fail('Ungültige Kiste');
+   const count=typeof b.count==='number'?b.count:1;
+   if(!Number.isInteger(count)||count<1||count>10||count>u.openSlots)return fail('Dieses Mehrfachöffnungs-Upgrade fehlt');
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
     const eligible=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl);
     if(!eligible.length)throw new Error('Keine überprüften Gewinne verfügbar');
     if(c.price===0){
-     // Unlimited lifetime uses, with a short request throttle to prevent bot spam.
-     // Unlimited free rewards are sellable; short server-side cooldown limits spam.
+     if(count>1)throw Error('Gratis-Kisten können nur einzeln geöffnet werden');
      const cutoff=new Date(Date.now()-2500);
      const changed=await tx.user.updateMany({
       where:{id:u.id,OR:[{freeLastOpenedAt:null},{freeLastOpenedAt:{lt:cutoff}}]},
       data:{freeLastOpenedAt:new Date()}
      });
-     if(changed.count!==1)throw new Error('Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten');
+     if(!changed.count)throw Error('Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten');
     }else{
-     const charged=await tx.user.updateMany({where:{id:u.id,coins:{gte:c.price}},data:{coins:{decrement:c.price}}});
-     if(charged.count!==1)throw new Error('Nicht genügend Coins');
+     const debit=c.price*count;
+     const charged=await tx.user.updateMany({
+      where:{id:u.id,coins:{gte:debit},openSlots:{gte:count}},
+      data:{coins:{decrement:debit}}
+     });
+     if(!charged.count)throw Error('Nicht genügend Guthaben oder Upgrade fehlt');
     }
-    const weight=eligible.reduce((s,i)=>s+i.weight,0);
-    let roll=randomInt(weight);
-    let selected=eligible[eligible.length-1];
-    for(const item of eligible){roll-=item.weight;if(roll<0){selected=item;break}}
-    const inv=await tx.inventoryItem.create({data:{ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:false}});
-    await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
-    return {item:selected,inventoryId:inv.id,isDemo:false};
+    const total=eligible.reduce((sum,item)=>sum+item.weight,0);
+    const results=[];
+    for(let index=0;index<count;index++){
+     let roll=randomInt(total);
+     let selected=eligible[eligible.length-1];
+     for(const item of eligible){roll-=item.weight;if(roll<0){selected=item;break}}
+     const inv=await tx.inventoryItem.create({data:{
+      ownerId:u.id,itemId:selected.id,valueAtDrop:selected.value,isDemo:false
+     }});
+     await tx.opening.create({data:{userId:u.id,caseId:c.id,itemId:selected.id}});
+     results.push({item:selected,inventoryId:inv.id,isDemo:false});
+    }
+    return results;
    },{isolationLevel:'Serializable'});
-   return NextResponse.json({...opened,coins:(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins});
+   const coins=(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins;
+   return NextResponse.json(count===1?{...opened[0],coins}:{results:opened,coins});
   }
   if(action==='sell'){
    const inventoryId=typeof b.inventoryId==='string'?b.inventoryId:'';
@@ -107,7 +131,7 @@ export async function POST(req:NextRequest){
  }catch(e){
   console.error('CASE RUSH API:',e);
   const message=e instanceof Error?e.message:'';
-  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten')return fail(message);
+  if(message==='Nicht genügend Coins'||message==='Starterkiste bereits geöffnet'||message==='Kiste nicht gefunden'||message==='Item nicht verfügbar'||message==='Bereits verkauft'||message==='Keine überprüften Gewinne verfügbar'||message==='Bitte 3 Sekunden bis zur nächsten Gratis-Kiste warten'||message==='Gratis-Kisten können nur einzeln geöffnet werden'||message==='Nicht genügend Guthaben oder Upgrade fehlt')return fail(message);
   if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2002')return fail('Dieser Benutzername ist bereits vergeben',409);
   if(typeof e==='object'&&e!==null&&'code' in e&&String(e.code).startsWith('P10'))return fail('Datenbank momentan nicht erreichbar. Bitte später erneut versuchen.',503);
   return fail('Aktion fehlgeschlagen. Bitte prüfe die Eingaben und probiere es erneut.',500);
