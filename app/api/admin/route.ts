@@ -126,12 +126,12 @@ export async function POST(req:NextRequest){
   const action=typeof input.action==='string'?input.action:'';
   if(action==='publishAnnouncement'){
    const message=typeof input.message==='string'?input.message.trim():'';
-   const minutes=input.durationMinutes;
+   const seconds=input.durationSeconds;
    if(!message||message.length>500)return fail('Nachricht muss 1 bis 500 Zeichen enthalten');
-   if(typeof minutes!=='number'||![5,10,30,60,120,1440].includes(minutes))return fail('Ungültige Anzeigedauer');
+   if(typeof seconds!=='number'||!Number.isSafeInteger(seconds)||seconds<1||seconds>86400)return fail('Dauer muss zwischen 1 Sekunde und 24 Stunden liegen');
    const created=await db.$transaction(async tx=>{
-    const row=await tx.adminAnnouncement.create({data:{message,expiresAt:new Date(Date.now()+minutes*60000),createdById:actor.id}});
-    await log(tx,actor,'PUBLISH_ANNOUNCEMENT','ANNOUNCEMENT',row.id,{message,durationMinutes:minutes});return row;
+    const row=await tx.adminAnnouncement.create({data:{message,expiresAt:new Date(Date.now()+seconds*1000),createdById:actor.id}});
+    await log(tx,actor,'PUBLISH_ANNOUNCEMENT','ANNOUNCEMENT',row.id,{message,durationSeconds:seconds});return row;
    });
    return NextResponse.json({ok:true,announcement:created},{headers:noStore});
   }
