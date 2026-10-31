@@ -513,3 +513,20 @@ header.top nav{flex-wrap:wrap;justify-content:center}
 .cr-announcement-message{font-size:13px;font-weight:650;overflow-wrap:anywhere}
 .cr-announcement button{background:transparent;color:#e5b9c0;border:0;cursor:pointer;padding:8px}
 @media(max-width:600px){.cr-announcement{align-items:flex-start;gap:8px;padding:10px}.cr-announcement-message{font-size:12px}}
+
+/* Event banners must not overlay the navigation or hide page sections. */
+.cr-event-banner,.cr-announcement{position:relative;top:auto}
+.game-header{position:sticky;top:0;z-index:45}
+.game-header nav{min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#785a35 transparent;flex-shrink:1}
+.game-header .game-nav-link{flex-shrink:0}
+.game-header nav a{visibility:visible}
+@media(max-width:1100px){
+ .game-header{height:auto;min-height:74px;flex-wrap:wrap;gap:12px;padding:12px 20px}
+ .game-header nav{order:3;flex:0 0 100%;width:100%;justify-content:flex-start;gap:22px}
+ .game-header .game-nav-link{padding:10px 0}
+ .game-header .game-nav-link:after{bottom:0}
+}
+@media(max-width:600px){
+ .cr-event-banner{min-height:0;gap:5px 10px}
+ .game-header nav{gap:18px;-webkit-overflow-scrolling:touch}
+}
