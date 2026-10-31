@@ -84,7 +84,8 @@ async function main(){
  assert.equal(ownBan.status,400,'Admin cannot ban own account');
  const banned=await post(adminPOST,'/api/admin',{action:'ban',userId:player.id},admin.cookie);
  assert.equal(banned.status,200);
- assert.equal((await get(adminGET,'/api/admin?view=users',player.cookie)).status,403);
+ assert.equal((await get(adminGET,'/api/admin?view=users',player.cookie)).status,401,
+  'A blocked session is unauthenticated, not just unauthorized');
  assert.equal((await get(socialGET,'/api/social?feed=wallet',player.cookie)).status,401,
   'Banned players cannot use their existing sessions');
  assert.equal((await post(gamePOST,'/api/game',{
