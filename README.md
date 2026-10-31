@@ -3,7 +3,7 @@
 Virtuelles Kisten-Spiel auf Next.js, Prisma und PostgreSQL.
 
 ## Aktueller Stand
-Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, Einmal-Starterkiste, Inventar und Sofortverkauf sind implementiert. Es gibt noch **keine** echten Case Battles, Bots, Adminpanel oder vollständige Sicherheitsüberprüfung. Keine Echtgeldtransaktionen oder Auszahlungen.
+Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, unbegrenzt kostenlose Übungskiste mit selteneren Premium-Drops, individuelle Kistenpools und horizontale Öffnungsanimation, Inventar und Sofortverkauf sind implementiert. Es gibt noch **keine** echten Case Battles, Bots, Adminpanel oder vollständige Sicherheitsüberprüfung. Keine Echtgeldtransaktionen oder Auszahlungen.
 
 ## CS2-Itemdaten und Bilder
 Die Kisten und Skins werden bei `npm run db:seed` aus der [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API) importiert, die auch von [ByMykel/counter-strike-items](https://github.com/ByMykel/counter-strike-items) verwendet wird.
@@ -13,7 +13,7 @@ Bildverweise sind externe Links auf die in ByMykels Metadaten angegebenen Bildqu
 ## Virtuelle Euro und Preise
 Alle numerischen Daten werden in **Euro-Cent-Einheiten** in der Datenbank gespeichert und im Browser als virtuelle € angezeigt. Beispiel: 500 gespeicherte Einheiten sind 5,00 € virtuelles Spielguthaben. **Keine Ein- oder Auszahlung; kein Umtausch gegen echte Euro.**
 
-Itemwerte werden bei der ersten Seed-Erstellung pro Item aus dem [öffentlichen Preis-Snapshot von ByMykel](https://github.com/ByMykel/counter-strike-price-tracker) übernommen, wenn eine eindeutige Kombination aus Skin/Wear und Preis existiert. Der Tracker liefert USD-Cent-Preise. Für die EUR-Umrechnung wird der **historische Referenzkurs 0,8961 EUR je USD vom 30.10.2026** verwendet. Preise sind deshalb **keine aktuellen Marktquotierungen**, sondern eine Referenz für feste **virtuelle** Werte. Fällt die Zuordnung aus, wird ein als `GAME` gekennzeichneter virtueller Spielwert vergeben. Bereits existente Itemwerte werden bei künftigen Deployments nicht geändert.
+Itemwerte werden bei der ersten Seed-Erstellung pro Item aus dem [öffentlichen Preis-Snapshot von ByMykel](https://github.com/ByMykel/counter-strike-price-tracker) übernommen, wenn eine eindeutige Kombination aus Skin/Wear und Preis existiert. Der Tracker liefert USD-Cent-Preise. Für die EUR-Umrechnung wird der **historische Referenzkurs 0,8961 EUR je USD vom 30.10.2026** verwendet. Preise sind deshalb **keine aktuellen Marktquotierungen**, sondern eine Referenz für feste **virtuelle** Werte. Fehlen belastbare Preise, werden betroffene Skins nicht für neue Öffnungen freigeschaltet. Bereits existente Itemwerte werden bei künftigen Deployments nicht geändert.
 
 Die durch `db:seed` importierten Werte sind nach der ersten Speicherung dauerhaft; Preise verändern sich **nicht** automatisch mit dem Markt.
 
@@ -32,3 +32,26 @@ Wenn Login oder Registrierung fehlschlagen, wird die Fehlermeldung im Anmeldedia
 
 ## Veröffentlichung
 Siehe [DEPLOY_RENDER.md](DEPLOY_RENDER.md). Diese Anwendung ist noch ein **Teststand** und vor öffentlicher Freigabe fehlen unter anderem Login-Rate-Limits, Anti-Bot-Schutz, Migrationsstrategie, Sicherheits-/Lasttests, Betreiberangaben und die Klärung von Bildrechten.
+
+## Neue Kistenstufen und Öffnungsanimation
+
+Die neun Kisten kosten **0, 1, 5, 20, 75, 250, 500, 1.000 und 2.000 virtuelle Euro**.
+Jede Kiste hat einen eigenen gewichteten Item-Pool (siehe `lib/case-config.ts`).
+Teurere Kisten haben steigende Chancen auf Epic, Legendary und Knife. In der teuersten
+2.000-€-Kiste gibt es **weder Common (grau) noch Uncommon (blau)**. 
+Die kostenlose `First Drop` hat nur **0,05 % Grundwahrscheinlichkeit für Rare oder höher**.
+
+**Die kostenlose Kiste darf beliebig oft geöffnet werden**, mit 2,5 Sekunden
+serverseitiger Anti-Spam-Pause zwischen den Käufen. Da das Öffnen nichts kostet, bleiben
+diese Gewinne **nicht verkaufbare Sammlerstücke**; sonst könnte jeder durch unbegrenzt
+kostenlose Öffnungen das virtuelle Guthaben unendlich erhöhen. Kostenpflichtige
+Kistengewinne lassen sich weiterhin sofort zum gespeicherten virtuellen Wert verkaufen.
+
+Die horizontal scrollende **links-nach-rechts**-Animation startet erst nach serverseitigem
+Kauf und Gewinnentscheid. Der mittige Marker zeigt exakt das serverseitig bestimmte
+Item. `Animation überspringen` und `Bewegungen reduzieren` ändern **niemals**
+Gewinn oder Drop-Chance. Die Anzahl der sichtbaren Felder bestimmt keine Chance.
+
+Achtung: Die tatsächlichen Drop-Chancen werden aus den **verfügbaren und bepreisten**
+Items berechnet. Fehlt eine überprüfte Marktpreis-/Bildquelle, wird das betreffende Item
+deaktiviert. Die erste Version enthält bewusst keinen Echtgeldhandel.
