@@ -9,18 +9,20 @@ export default function LiveAnnouncements(){
   const sync=async()=>{
    try{
     if(document.visibilityState==='visible'){
-     await fetch('/api/presence',{method:'POST',headers:{'content-type':'application/json'},body:'{}',credentials:'same-origin'});
      const r=await fetch('/api/presence',{cache:'no-store'});
      if(r.ok){const j=await r.json();if(active)setItems(j.announcements??[])}
     }
    }catch{/* Connection interruptions are tolerated. */}
   };
   void sync();
-  const timer=setInterval(()=>void sync(),10000);
+  const timer=setInterval(()=>void sync(),1000);
+  const heartbeat=()=>{if(document.visibilityState==='visible')void fetch('/api/presence',{method:'POST',headers:{'content-type':'application/json'},body:'{}',credentials:'same-origin'}).catch(()=>{});};
+  heartbeat();
+  const presenceTimer=setInterval(heartbeat,20000);
   const onFocus=()=>void sync();
   document.addEventListener('visibilitychange',onFocus);
   window.addEventListener('focus',onFocus);
-  return()=>{active=false;clearInterval(timer);document.removeEventListener('visibilitychange',onFocus);window.removeEventListener('focus',onFocus)};
+  return()=>{active=false;clearInterval(timer);clearInterval(presenceTimer);document.removeEventListener('visibilitychange',onFocus);window.removeEventListener('focus',onFocus)};
  },[]);
  const current=items.find(x=>!hidden.includes(x.id)&&new Date(x.expiresAt).getTime()>Date.now());
  if(!current)return null;
