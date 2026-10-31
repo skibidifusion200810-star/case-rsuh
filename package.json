@@ -10,7 +10,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "start:production": "tsx server/production.ts",
     "audit:catalog": "tsx scripts/audit-catalog.ts",
-    "test:case-config": "tsx scripts/test-case-config.ts"
+    "test:case-config": "tsx scripts/test-case-config.ts",
+    "test:openings": "tsx scripts/test-openings.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
