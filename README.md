@@ -324,3 +324,56 @@ und `POST /api/admin` mit
 
 Die neue Datenbankstruktur wird bei Render durch `prisma db push`
 angelegt. CI-Integrationstest: `npm run test:admin`.
+
+## Admin-gesteuerte zeitlich begrenzte Events
+
+Das Adminpanel (`/admin` → **EVENTS**) enthält jetzt einen
+serverseitig geschützten Event-Konfigurator. Nur das per
+`ADMIN_USER_ID` authentifizierte Eigentümerkonto kann Events
+starten oder stoppen.
+
+- Rabatt: **0–90 %**, in 5-%-Schritten (Beispiel: 50 %).
+- Luck: **1×, 1,25×, 1,5×, 2×, 2,5×, 3×, 4× oder 5×**.
+- Dauer: **1, 5, 10, 15, 30, 60 oder 120 Minuten**.
+- Eine Aktion kann Rabatt und Luck gleichzeitig einschalten.
+- Während eines laufenden Events lassen sich weitere Events nicht
+  überlagern. Der Admin kann es jederzeit manuell stoppen.
+- Sämtliche Starts und Stopps werden über `AdminAuditLog` protokolliert.
+
+**Automatisches Ende:** Die Datenbank hält einen globalen Eventdatensatz
+`GameEvent` mit `startsAt` und `endsAt`. Jede Kistenöffnung und
+Battle-Auswertung prüft auf dem Server, ob der aktuelle Zeitpunkt im
+Intervall liegt. Nach Ablauf greifen normale Preise und Gewichte,
+auch ohne Neustart und ohne dass der Admin im Browser anwesend ist.
+
+**Preisberechnung:** Für neu bezahlte Öffnungen und neu erstellte
+1v1-/2v2-Battles gilt `ceil(Basispreis × (100 − Rabatt)/100)`
+mit mindestens 0,01 € für kostenpflichtige Kisten.
+Gratis-Kisten bleiben gratis; laufende Battle-Lobbys behalten
+den beim Erstellen gespeicherten Einsatz, auch wenn das Event endet.
+Der Rabatt ist ausschließlich ein Rabatt auf virtuelle Kistenpreise,
+nicht auf Upgrades oder direkte Spielergeld-Transfers.
+
+**Luck-Berechnung:** Bei jeder serverseitig ermittelten Öffnung
+werden die Drop-Gewichte für seltene Raritäten (Rare, Epic,
+Legendary und Knife) und für Gegenstände oberhalb des normalen
+Kistenpreises mit dem gewählten Multiplikator verstärkt.
+Beispielsweise verdoppelt 2× Luck das **relative Gewicht** solcher
+Drops, **nicht** ihre finale Gewinnwahrscheinlichkeit in Prozent
+und **nicht** ihren Markt- oder Verkaufswert.
+Das System normalisiert die neuen Gewichte durch die Gesamtsumme.
+Luck garantiert daher keinen Gewinn. Für Team-Battles gelten die
+aktiven Luck-Gewichte bei der tatsächlichen serverseitigen
+Auswertung, während der beim Battle-Start bezahlte Preis erhalten bleibt.
+
+**Anzeige:** Auf jeder Unterseite erscheint ein öffentlicher
+Live-Banner mit den aktiven Boni und einem sekundengenauen Countdown.
+Die Kistenübersicht zeigt Original-/Rabattpreise sowie die
+während des Events effektiven Drop-Gewichte und daraus
+berechneten Chancen. Die Oberfläche synchronisiert Änderungen
+regelmäßig; der Server ist in allen Fällen die verbindliche Quelle.
+
+Code: `lib/events.ts`,
+`app/api/game/route.ts`, `app/api/admin/route.ts`,
+`app/admin/EventControls.tsx`, `app/components/EventBanner.tsx`.
+Integrationstest: `npm run test:events`.
