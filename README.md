@@ -89,3 +89,68 @@ Für die häufigen günstigen Drops werden ausdrücklich die **Field-Tested**-Va
 Die genaue Quelle, EUR-Cent-Werte, Variante und Datierung stehen in `lib/market-reference.ts`. Die Zahlen sind **historische Angebotsreferenzen**; sie aktualisieren sich nicht in Echtzeit und sind keine Echtgeld-Auszahlungen. Extern beobachtete Marktpreise können sich ändern. Bei einer konfigurierten Live-Preisdatenquelle werden aktuelle genau zugeordnete Werte bevorzugt. Andere, nicht verifizierte Werte werden nicht erfunden.
 
 Bestehende gesammelte Gegenstände werden im Inventar zum damals gespeicherten Wert verkauft. Die kostenlose Kiste bleibt unbegrenzt nutzbar; der 2,5-Sekunden-Cooldown schützt vor schnellen automatisierten Anfragen.
+
+## Case Battles 1-gegen-1 (Spieler oder Bot)
+
+Der Menüpunkt **BATTLES** enthält ein öffentliches Lobby-System für 1v1-Duelle,
+mit der Möglichkeit, statt eines zweiten Spielers einen RUSH BOT zu wählen.
+Jeder Teilnehmer bekommt unabhängig aus **derselben kostenpflichtigen Kiste**
+einen zufälligen Gegenstand. Der höhere virtuelle Drop-Wert gewinnt **beide Items**
+für sein Inventar. Bei Gleichstand entscheidet ein fairer 50/50-Zufallsentscheid.
+Gewinnt ein Bot, bekommt der menschliche Spieler keine Items. Es gibt
+**keine Echtgeldpreise**. Gratis-Kisten sind für Battles ausgeschlossen.
+
+Eine offene Spielerlobby reserviert den Einsatz des Erstellers. Wenn sie vor dem
+Start vom Ersteller abgebrochen wird, wird die Reservierung vollständig
+zurückerstattet. Der Gegner zahlt erst beim Beitritt. Die serverseitige
+PostgreSQL-Transaktion führt Kauf, zufällige Ziehung, Gewinnausschüttung und
+Battle-Ergebnis zusammen aus; konkurrierende Join-Versuche können den
+Einsatz nicht mehrfach abbuchen. Die Oberfläche fragt neue Battle-Zustände
+alle vier Sekunden ab – es handelt sich **nicht** um einen garantierten
+dauerhaften Socket.IO-Livekanal.
+
+API: `GET /api/battles`, `POST /api/battles` mit
+`action=create|join|cancel`. Nur angemeldete Spieler können handeln.
+Aufgelistet werden die letzten 30 Battles. Du kannst höchstens drei
+offene eigene Lobbys haben.
+
+## Dauerhafte Mehrfachöffnung-Upgrades
+
+Der Menüpunkt **UPGRADES** bietet folgende einmaligen Freischaltungen:
+
+| Gleichzeitige kostenpflichtige Öffnungen | Kaufpreis (virtuelles Guthaben) |
+| ---: | ---: |
+| 2× | 1,00 € |
+| 4× | 10,00 € |
+| 8× | 15,00 € |
+| 10× | 20,00 € |
+
+Mit `openSlots` in PostgreSQL wird die **höchste** gekaufte Stufe
+dauerhaft gespeichert. Höhere Stufen können direkt gekauft werden;
+doppelte Käufe werden verhindert. Bei jeder Mehrfachöffnung kostet
+jede einzelne Kiste ihren regulären Kistenpreis und die Ziehungen
+werden gemeinsam serverseitig gebucht. Alle Drops erscheinen in einem
+Ergebnisfenster und lassen sich einzeln verkaufen. Kostenlose Kisten
+bleiben einzeln öffnbar (Anti-Spam-Pause).
+
+## Kistenbalance und Quellen (November 2026)
+
+Cent-Gewinne von 0,01–0,02 € gibt es nur in der **kostenlosen und der
+1-€-Kiste**. Ab 5 € enthalten die Kisten keine dieser billigsten Varianten
+mehr. Die 75-€-Kiste hat keinen ein- oder zweicentigen Gewinn.
+
+Die **2.000-€-Karambit-Eclipse-Kiste** enthält als extrem seltenen Jackpot
+auch die **AWP | Dragon Lore (Factory New)** mit 0,5 % konfiguriertem
+Grundgewicht. Der Referenzpreis von **11.501,06 €** wurde als
+CS.MONEY-Angebot aus [FragStash](https://fragstash.com/catalog/awp/dragon-lore/)
+übernommen. Das ist ein **Angebots-Snapshot**, kein garantiert aktueller
+Verkaufswert oder Echtgeld-Auszahlungsversprechen. Der Spielwert bleibt
+beim Erhalt gespeichert, damit er später nicht stillschweigend verändert
+wird. Die tatsächlichen Drop-Chancen ergeben sich aus den zum Seed-Zeitpunkt
+bild- und preisverifizierten Items; sie können vom konfigurierten
+Grundgewicht abweichen, wenn ein Item deaktiviert ist.
+
+Tests: `npm run test:battles-upgrades`,
+`npm run test:case-config`, `npm run audit:catalog`
+und `npm run build`. Der Render-Dienst muss nach dem GitHub-Commit
+erst neu bereitgestellt werden.
