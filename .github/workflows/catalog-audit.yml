@@ -49,3 +49,5 @@ jobs:
 
       - name: Test secure trades, merge, 2v2 and bot-filled team battles
         run: npm run test:trades-duos
+      - name: Test owner-only admin balance grants and moderation
+        run: npm run test:admin
