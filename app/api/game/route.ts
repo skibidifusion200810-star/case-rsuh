@@ -130,7 +130,7 @@ export async function POST(req:NextRequest){
    const settled=await db.$transaction(async tx=>{
     // Read only the authenticated user's still-unsold items. Use the value at draw.
     const rows=await tx.inventoryItem.findMany({
-     where:{id:{in:inventoryIds},ownerId:u.id,soldAt:null},
+     where:{id:{in:inventoryIds},ownerId:u.id,soldAt:null,tradeLockId:null},
      select:{id:true,valueAtDrop:true,item:{select:{value:true}}}
     });
     if(rows.length!==inventoryIds.length)throw Error('Mindestens ein Item ist bereits verkauft oder gehört dir nicht');
@@ -151,8 +151,8 @@ export async function POST(req:NextRequest){
    if(!inventoryId)return fail('Ungültiges Inventar-Item');
    const result=await db.$transaction(async tx=>{
     const inv=await tx.inventoryItem.findUnique({where:{id:inventoryId},include:{item:true}});
-    if(!inv||inv.ownerId!==u.id||inv.soldAt)throw new Error('Item nicht verfügbar');
-    const claimed=await tx.inventoryItem.updateMany({where:{id:inventoryId,ownerId:u.id,soldAt:null},data:{soldAt:new Date()}});
+    if(!inv||inv.ownerId!==u.id||inv.soldAt||inv.tradeLockId)throw new Error('Item nicht verfügbar');
+    const claimed=await tx.inventoryItem.updateMany({where:{id:inventoryId,ownerId:u.id,soldAt:null,tradeLockId:null},data:{soldAt:new Date()}});
     if(claimed.count!==1)throw new Error('Bereits verkauft');
     const paidValue=inv.valueAtDrop??inv.item.value;
     const updated=await tx.user.update({where:{id:u.id},data:{coins:{increment:paidValue}}});
