@@ -10,11 +10,15 @@ async function user(req:NextRequest){
  const token=req.cookies.get(cookie)?.value;
  if(!token)return null;
  const session=await db.session.findUnique({where:{tokenHash:hash(token)},include:{user:true}});
- if(!session||session.expiresAt<new Date())return null;
+ if(!session||session.expiresAt<new Date()||session.user.isBanned)return null;
  return session.user;
 }
 function fail(error:string,status=400){return NextResponse.json({error},{status})}
-const safeUser=(u:{id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean})=>({id:u.id,username:u.username,coins:u.coins,openSlots:u.openSlots,starterClaimed:u.starterClaimed});
+const safeUser=(u:{id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean})=>({
+ id:u.id,username:u.username,coins:u.coins,openSlots:u.openSlots,
+ starterClaimed:u.starterClaimed,
+ isAdmin:process.env.ADMIN_USER_ID===u.id&&/^[a-f0-9-]{36}$/i.test(u.id)
+});
 export async function GET(req:NextRequest){
  try{
   const cmd=req.nextUrl.searchParams.get('action')||'cases';
@@ -46,6 +50,7 @@ export async function POST(req:NextRequest){
    }else{
     const found=await db.user.findUnique({where:{username}});
     if(!found||!(await argon2.verify(found.passwordHash,password)))return fail('Falsche Zugangsdaten',401);
+    if(found.isBanned)return fail('Dieses Konto wurde gesperrt',403);
     u=found;
    }
    const token=randomBytes(32).toString('hex');

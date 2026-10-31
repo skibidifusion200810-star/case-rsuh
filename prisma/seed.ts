@@ -142,6 +142,23 @@ async function main(){
     if(balanced.rtp>0.9)console.warn('[BALANCE WARNING] expected payout exceeds 90%',def.name);
    }
   }
+  // Persistent owner adjustments are reapplied AFTER automated market-price balancing
+  // because Render seeds on each deploy and would otherwise reset admin changes.
+  const priceOverride=await db.adminCaseOverride.findUnique({where:{slug:def.slug}});
+  if(priceOverride)await db.case.update({where:{id:c.id},data:{price:priceOverride.price}});
+  const existingItems=await db.item.findMany({where:{caseId:c.id},
+   select:{id:true,imageUrl:true,value:true}});
+  const customWeights=await db.adminItemOverride.findMany({
+   where:{itemId:{in:existingItems.map(i=>i.id)}}
+  });
+  if(customWeights.length){
+   const eligibleIds=new Set(existingItems.filter(i=>!!i.imageUrl&&i.value>=1).map(i=>i.id));
+   for(const itemOverride of customWeights){
+    if(itemOverride.weight>0&&!eligibleIds.has(itemOverride.itemId))continue;
+    await db.item.update({where:{id:itemOverride.itemId},
+     data:{weight:itemOverride.weight}});
+   }
+  }
   console.log('Seeded:',def.name,'with',imported,'image-backed items');
  }
  console.log('CS2 price/image audit:',{verified,missing,csmoney,legacy,strict,byMykelSnapshotAt:pricesFeed.metadata?.updated_at??'unknown'});

@@ -13,7 +13,7 @@ async function viewer(req:NextRequest){
  const token=req.cookies.get('cr_session')?.value;
  if(!token)return null;
  const s=await db.session.findUnique({where:{tokenHash:digest(token)},include:{user:true}});
- return s&&s.expiresAt>new Date()?s.user:null;
+ return s&&s.expiresAt>new Date()&&!s.user.isBanned?s.user:null;
 }
 function active(items:Item[]){return items.filter(x=>x.weight>0&&x.value>=1&&!!x.imageUrl)}
 function draw(items:Item[]){

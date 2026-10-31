@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
+import type {Prisma} from '@prisma/client';
 import {socialViewer} from '@/lib/social';
 
 export const dynamic='force-dynamic';
@@ -17,7 +18,7 @@ async function access(req:NextRequest){
  if(!user)return {user:null,allowed:false,configured:adminConfigured()};
  return {user,allowed:adminConfigured()&&user.id===ownerId,configured:adminConfigured()};
 }
-async function log(tx:Parameters<Parameters<typeof db.$transaction>[0]>[0], actor:{id:string;username:string},
+async function log(tx:Prisma.TransactionClient, actor:{id:string;username:string},
  action:string,targetType:string,targetId:string,details:Record<string,unknown>){
  await tx.adminAuditLog.create({data:{
   actorId:actor.id,actorUsername:actor.username,action,targetType,targetId,details:JSON.stringify(details)
