@@ -1,151 +1,203 @@
 import {NextRequest,NextResponse} from 'next/server';
+import type {Item,Prisma} from '@prisma/client';
 import {db} from '@/lib/db';
 import {createHash,randomInt} from 'node:crypto';
 
 export const dynamic='force-dynamic';
-const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
-const failed=(message:string,status=400)=>NextResponse.json({error:message},{status,headers:{'Cache-Control':'no-store'}});
-type Draw={id:string;value:number;name:string;imageUrl:string|null;rarity:string;weight:number};
-
+const fail=(error:string,status=400)=>NextResponse.json({error},{status,headers:{'Cache-Control':'no-store'}});
+const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
+const limit=10;
+type BattleFull=Prisma.BattleGetPayload<{include:{rounds:true}}>;
 async function viewer(req:NextRequest){
- const cookie=req.cookies.get('cr_session')?.value;
- if(!cookie)return null;
- const session=await db.session.findUnique({where:{tokenHash:hash(cookie)},include:{user:true}});
- return session&&session.expiresAt>new Date()?session.user:null;
+ const token=req.cookies.get('cr_session')?.value;
+ if(!token)return null;
+ const s=await db.session.findUnique({where:{tokenHash:digest(token)},include:{user:true}});
+ return s&&s.expiresAt>new Date()?s.user:null;
 }
-const pick=(items:Draw[])=>{
- const total=items.reduce((n,item)=>n+item.weight,0);
- if(!total)throw new Error('Für diese Kiste gibt es keine Gewinne');
- let roll=randomInt(total);
- for(const item of items){roll-=item.weight;if(roll<0)return item}
+function active(items:Item[]){return items.filter(x=>x.weight>0&&x.value>=1&&!!x.imageUrl)}
+function draw(items:Item[]){
+ const total=items.reduce((a,b)=>a+b.weight,0);
+ if(total<=0)throw Error('Kein Item verfügbar');
+ let number=randomInt(total);
+ for(const item of items){number-=item.weight;if(number<0)return item}
  return items[items.length-1];
-};
-type BattleInfo={
- id:string;caseId:string;creatorId:string;guestId:string|null;againstBot:boolean;
- status:string;winnerId:string|null;creatorItemId:string|null;guestItemId:string|null;
- creatorValue:number|null;guestValue:number|null;createdAt:Date;finishedAt:Date|null;
-};
-async function present(battles:BattleInfo[],viewerId?:string){
- const users=await db.user.findMany({where:{id:{in:[...new Set(battles.flatMap(b=>[b.creatorId,b.guestId].filter((s):s is string=>!!s)))]}},select:{id:true,username:true}});
- const cases=await db.case.findMany({where:{id:{in:[...new Set(battles.map(b=>b.caseId))]}},select:{id:true,name:true,price:true,imageUrl:true}});
- const itemIds=[...new Set(battles.flatMap(b=>[b.creatorItemId,b.guestItemId].filter((s):s is string=>!!s)))];
- const items=await db.item.findMany({where:{id:{in:itemIds}},select:{id:true,name:true,rarity:true,imageUrl:true,value:true}});
- const username=new Map(users.map(u=>[u.id,u.username]));
- const caseMap=new Map(cases.map(c=>[c.id,c]));
- const itemMap=new Map(items.map(i=>[i.id,i]));
- return battles.map(b=>({
-  id:b.id,status:b.status,againstBot:b.againstBot,
-  creator:username.get(b.creatorId)??'Gelöschter Spieler',
-  guest:b.againstBot?'RUSH BOT':b.guestId?username.get(b.guestId)??'Gast':null,
-  viewerRole:viewerId===b.creatorId?'creator':viewerId&&b.guestId===viewerId?'guest':'spectator',
-  winner:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
-  case:caseMap.get(b.caseId)??null,
-  creatorDrop:b.creatorItemId?{...itemMap.get(b.creatorItemId),value:b.creatorValue}:null,
-  guestDrop:b.guestItemId?{...itemMap.get(b.guestItemId),value:b.guestValue}:null,
-  createdAt:b.createdAt.toISOString(),
-  finishedAt:b.finishedAt?.toISOString()??null
- }));
 }
-
+async function present(battles:BattleFull[],userId?:string){
+ const userIds=[...new Set(battles.flatMap(x=>[x.creatorId,x.guestId].filter((s):s is string=>!!s)))];
+ const caseIds=[...new Set(battles.flatMap(x=>[x.caseId,...x.rounds.map(r=>r.caseId)]))];
+ const itemIds=[...new Set(battles.flatMap(x=>[
+  x.creatorItemId,x.guestItemId,...x.rounds.flatMap(r=>[r.creatorItemId,r.guestItemId])
+ ].filter((s):s is string=>!!s)))];
+ const [users,cases,items]=await Promise.all([
+  db.user.findMany({where:{id:{in:userIds}},select:{id:true,username:true}}),
+  db.case.findMany({where:{id:{in:caseIds}},select:{id:true,name:true,price:true,imageUrl:true}}),
+  db.item.findMany({where:{id:{in:itemIds}},select:{id:true,name:true,rarity:true,value:true,imageUrl:true,weight:true}})
+ ]);
+ const names=new Map(users.map(x=>[x.id,x.username]));
+ const casesById=new Map(cases.map(x=>[x.id,x]));
+ const itemsById=new Map(items.map(x=>[x.id,x]));
+ const drop=(id:string|null,value:number|null)=>id?{...itemsById.get(id),value:value??itemsById.get(id)?.value??0}:null;
+ return battles.map(b=>{
+  const rounds=b.rounds.length?b.rounds.slice().sort((a,z)=>a.position-z.position).map(r=>({
+   position:r.position,caseId:r.caseId,case:casesById.get(r.caseId)??null,
+   casePrice:r.casePrice,creatorDrop:drop(r.creatorItemId,r.creatorValue),
+   guestDrop:drop(r.guestItemId,r.guestValue)
+  })):[{
+   position:0,caseId:b.caseId,case:casesById.get(b.caseId)??null,
+   casePrice:b.totalCost||casesById.get(b.caseId)?.price||0,
+   creatorDrop:drop(b.creatorItemId,b.creatorValue),guestDrop:drop(b.guestItemId,b.guestValue)
+  }];
+  const creatorTotal=rounds.reduce((sum,r)=>sum+(r.creatorDrop?.value??0),0);
+  const guestTotal=rounds.reduce((sum,r)=>sum+(r.guestDrop?.value??0),0);
+  return {
+   id:b.id,status:b.status,againstBot:b.againstBot,
+   creator:names.get(b.creatorId)??'Spieler',
+   guest:b.againstBot?'RUSH BOT':b.guestId?names.get(b.guestId)??'Gast':null,
+   viewerRole:userId===b.creatorId?'creator':userId&&userId===b.guestId?'guest':'spectator',
+   winner:b.winnerId===b.creatorId?'creator':b.winnerId&&(b.againstBot||b.winnerId===b.guestId)?'guest':null,
+   case:casesById.get(b.caseId)??null,
+   totalCost:b.totalCost||rounds.reduce((sum,r)=>sum+r.casePrice,0),
+   rounds,creatorTotal,guestTotal,
+   creatorDrop:rounds[0].creatorDrop,guestDrop:rounds[0].guestDrop,
+   createdAt:b.createdAt.toISOString(),finishedAt:b.finishedAt?.toISOString()??null
+  };
+ });
+}
 export async function GET(req:NextRequest){
  try{
   const u=await viewer(req);
   const id=req.nextUrl.searchParams.get('id');
   if(id){
-   const b=await db.battle.findUnique({where:{id}});
-   return b?NextResponse.json({battle:(await present([b],u?.id))[0]},{headers:{'Cache-Control':'no-store'}}):failed('Battle nicht gefunden',404);
+   const battle=await db.battle.findUnique({where:{id},include:{rounds:true}});
+   if(!battle)return fail('Battle nicht gefunden',404);
+   return NextResponse.json({battle:(await present([battle],u?.id))[0]},{headers:{'Cache-Control':'no-store'}});
   }
-  const battles=await db.battle.findMany({orderBy:{createdAt:'desc'},take:30});
+  const battles=await db.battle.findMany({orderBy:{createdAt:'desc'},take:30,include:{rounds:true}});
   return NextResponse.json({battles:await present(battles,u?.id)},{headers:{'Cache-Control':'no-store'}});
- }catch(error){console.error('Battle list:',error);return failed('Battles vorübergehend nicht verfügbar',503)}
+ }catch(e){console.error('Battle list:',e);return fail('Battles momentan nicht verfügbar',503)}
 }
-
 export async function POST(req:NextRequest){
- const u=await viewer(req);
- if(!u)return failed('Bitte anmelden',401);
+ const user=await viewer(req);
+ if(!user)return fail('Bitte anmelden',401);
  try{
   const body=await req.json() as Record<string,unknown>;
-  const action=body?.action;
-  if(action==='create'){
-   const caseId=typeof body.caseId==='string'?body.caseId:'';
+  if(body.action==='create'){
+   const ids=Array.isArray(body.caseIds)?body.caseIds:typeof body.caseId==='string'?[body.caseId]:[];
+   if(ids.length<1||ids.length>limit||!ids.every(x=>typeof x==='string'&&x.length>0))
+    return fail('Bitte 1 bis 10 Kisten auswählen');
+   const caseIds=ids as string[];
    const againstBot=body.againstBot===true;
-   if(!caseId)return failed('Kiste auswählen');
    const created=await db.$transaction(async tx=>{
-    const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
-    if(!c||c.price<=0)throw Error('Case Battles brauchen eine kostenpflichtige Kiste');
-    const active=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl);
-    if(active.length<2)throw Error('Diese Kiste ist derzeit nicht für Battles verfügbar');
-    if(await tx.battle.count({where:{creatorId:u.id,status:'WAITING'}})>=3)throw Error('Du hast schon 3 offene Battles');
-    const charged=await tx.user.updateMany({where:{id:u.id,coins:{gte:c.price}},data:{coins:{decrement:c.price}}});
-    if(!charged.count)throw Error('Nicht genügend Guthaben');
-    const battle=await tx.battle.create({data:{creatorId:u.id,caseId,againstBot,status:'WAITING'}});
+    const available=await tx.case.findMany({where:{id:{in:caseIds}},include:{items:true}});
+    const byId=new Map(available.map(c=>[c.id,c]));
+    const selected=caseIds.map(id=>byId.get(id));
+    if(selected.some(c=>!c||c.price<=0||active(c.items).length<2))
+     throw Error('Mindestens eine ausgewählte Kiste ist nicht verfügbar');
+    const totalCost=selected.reduce((sum,c)=>sum+c!.price,0);
+    if(!Number.isSafeInteger(totalCost)||totalCost<=0)throw Error('Ungültiger Gesamtpreis');
+    if(await tx.battle.count({where:{creatorId:user.id,status:'WAITING'}})>=3)
+     throw Error('Du hast bereits 3 offene Battles');
+    const paid=await tx.user.updateMany({where:{id:user.id,coins:{gte:totalCost}},data:{coins:{decrement:totalCost}}});
+    if(paid.count!==1)throw Error('Nicht genügend Guthaben');
+    const battle=await tx.battle.create({
+     data:{
+      creatorId:user.id,caseId:selected[0]!.id,totalCost,againstBot,
+      rounds:{create:selected.map((c,index)=>({position:index,caseId:c!.id,casePrice:c!.price}))}
+     },include:{rounds:true}
+    });
     if(!againstBot)return battle;
-    const a=pick(active),bot=pick(active);
-    const creatorWins=a.value>bot.value||(a.value===bot.value&&randomInt(2)===0);
-    await tx.opening.create({data:{userId:u.id,caseId,itemId:a.id}});
-    if(creatorWins)await tx.inventoryItem.createMany({data:[
-     {ownerId:u.id,itemId:a.id,valueAtDrop:a.value},
-     {ownerId:u.id,itemId:bot.id,valueAtDrop:bot.value}
-    ]});
-    return tx.battle.update({where:{id:battle.id},data:{
-     status:'FINISHED',winnerId:creatorWins?u.id:'BOT',
-     creatorItemId:a.id,guestItemId:bot.id,
-     creatorValue:a.value,guestValue:bot.value,finishedAt:new Date()
+    const results=selected.map((c,index)=>({
+     round:battle.rounds.find(r=>r.position===index)!,caseId:c!.id,
+     a:draw(active(c!.items)),b:draw(active(c!.items))
+    }));
+    const sumA=results.reduce((sum,r)=>sum+r.a.value,0);
+    const sumB=results.reduce((sum,r)=>sum+r.b.value,0);
+    const won=sumA>sumB||(sumA===sumB&&randomInt(2)===0);
+    for(const r of results)await tx.battleRound.update({where:{id:r.round.id},data:{
+     creatorItemId:r.a.id,guestItemId:r.b.id,creatorValue:r.a.value,guestValue:r.b.value
     }});
+    await tx.opening.createMany({data:results.map(r=>({userId:user.id,caseId:r.caseId,itemId:r.a.id}))});
+    if(won)await tx.inventoryItem.createMany({data:results.flatMap(r=>[
+     {ownerId:user.id,itemId:r.a.id,valueAtDrop:r.a.value},
+     {ownerId:user.id,itemId:r.b.id,valueAtDrop:r.b.value}
+    ])});
+    return tx.battle.update({where:{id:battle.id},data:{
+     status:'FINISHED',winnerId:won?user.id:'BOT',
+     creatorItemId:results[0].a.id,guestItemId:results[0].b.id,
+     creatorValue:results[0].a.value,guestValue:results[0].b.value,finishedAt:new Date()
+    },include:{rounds:true}});
    },{isolationLevel:'Serializable'});
-   return NextResponse.json({battle:(await present([created],u.id))[0]});
+   return NextResponse.json({battle:(await present([created],user.id))[0]});
   }
-  if(action==='join'){
+  if(body.action==='join'){
    const battleId=typeof body.battleId==='string'?body.battleId:'';
    const joined=await db.$transaction(async tx=>{
-    const battle=await tx.battle.findUnique({where:{id:battleId}});
-    if(!battle||battle.status!=='WAITING'||battle.againstBot||battle.guestId)throw Error('Battle nicht mehr offen');
-    if(battle.creatorId===u.id)throw Error('Du kannst nicht gegen dich selbst spielen');
-    const c=await tx.case.findUnique({where:{id:battle.caseId},include:{items:true}});
-    if(!c||!c.price)throw Error('Kiste nicht verfügbar');
-    const active=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl);
-    if(active.length<2)throw Error('Nicht genügend Items für diese Kiste');
-    const charged=await tx.user.updateMany({where:{id:u.id,coins:{gte:c.price}},data:{coins:{decrement:c.price}}});
-    if(!charged.count)throw Error('Nicht genügend Guthaben');
-    const a=pick(active),b=pick(active);
-    const creatorWins=a.value>b.value||(a.value===b.value&&randomInt(2)===0);
-    const winnerId=creatorWins?battle.creatorId:u.id;
-    const claimed=await tx.battle.updateMany({where:{id:battle.id,status:'WAITING',guestId:null},data:{
-     guestId:u.id,status:'FINISHED',winnerId,
-     creatorItemId:a.id,guestItemId:b.id,
-     creatorValue:a.value,guestValue:b.value,finishedAt:new Date()
+    const b=await tx.battle.findUnique({where:{id:battleId},include:{rounds:true}});
+    if(!b||b.status!=='WAITING'||b.againstBot||b.guestId)throw Error('Battle nicht mehr offen');
+    if(b.creatorId===user.id)throw Error('Du kannst nicht gegen dich selbst spielen');
+    const rounds=b.rounds.length?b.rounds.slice().sort((a,z)=>a.position-z.position):[];
+    const ids=rounds.length?rounds.map(r=>r.caseId):[b.caseId];
+    const cases=await tx.case.findMany({where:{id:{in:ids}},include:{items:true}});
+    const lookup=new Map(cases.map(c=>[c.id,c]));
+    if(ids.some(id=>!lookup.has(id)||active(lookup.get(id)!.items).length<2))
+     throw Error('Kiste nicht verfügbar');
+    const totalCost=b.totalCost||ids.reduce((sum,id)=>sum+lookup.get(id)!.price,0);
+    const paid=await tx.user.updateMany({where:{id:user.id,coins:{gte:totalCost}},data:{coins:{decrement:totalCost}}});
+    if(paid.count!==1)throw Error('Nicht genügend Guthaben');
+    const results=ids.map((id,index)=>({
+     round:rounds[index],caseId:id,a:draw(active(lookup.get(id)!.items)),b:draw(active(lookup.get(id)!.items))
+    }));
+    const aTotal=results.reduce((sum,r)=>sum+r.a.value,0);
+    const bTotal=results.reduce((sum,r)=>sum+r.b.value,0);
+    const winnerId=aTotal>bTotal||(aTotal===bTotal&&randomInt(2)===0)?b.creatorId:user.id;
+    const claimed=await tx.battle.updateMany({where:{id:b.id,status:'WAITING',guestId:null},data:{
+     guestId:user.id,status:'FINISHED',winnerId,
+     creatorItemId:results[0].a.id,guestItemId:results[0].b.id,
+     creatorValue:results[0].a.value,guestValue:results[0].b.value,finishedAt:new Date()
     }});
-    if(!claimed.count)throw Error('Battle bereits gestartet');
-    await tx.opening.createMany({data:[
-     {userId:battle.creatorId,caseId:c.id,itemId:a.id},
-     {userId:u.id,caseId:c.id,itemId:b.id}
-    ]});
-    await tx.inventoryItem.createMany({data:[
-     {ownerId:winnerId,itemId:a.id,valueAtDrop:a.value},
-     {ownerId:winnerId,itemId:b.id,valueAtDrop:b.value}
-    ]});
-    return tx.battle.findUniqueOrThrow({where:{id:battle.id}});
+    if(claimed.count!==1)throw Error('Battle bereits gestartet');
+    for(const r of results)if(r.round)await tx.battleRound.update({where:{id:r.round.id},data:{
+     creatorItemId:r.a.id,guestItemId:r.b.id,creatorValue:r.a.value,guestValue:r.b.value
+    }});
+    await tx.opening.createMany({data:results.flatMap(r=>[
+     {userId:b.creatorId,caseId:r.caseId,itemId:r.a.id},
+     {userId:user.id,caseId:r.caseId,itemId:r.b.id}
+    ])});
+    await tx.inventoryItem.createMany({data:results.flatMap(r=>[
+     {ownerId:winnerId,itemId:r.a.id,valueAtDrop:r.a.value},
+     {ownerId:winnerId,itemId:r.b.id,valueAtDrop:r.b.value}
+    ])});
+    return tx.battle.findUniqueOrThrow({where:{id:b.id},include:{rounds:true}});
    },{isolationLevel:'Serializable'});
-   return NextResponse.json({battle:(await present([joined],u.id))[0]});
+   return NextResponse.json({battle:(await present([joined],user.id))[0]});
   }
-  if(action==='cancel'){
+  if(body.action==='cancel'){
    const battleId=typeof body.battleId==='string'?body.battleId:'';
    const canceled=await db.$transaction(async tx=>{
-    const battle=await tx.battle.findFirst({where:{id:battleId,creatorId:u.id,guestId:null,againstBot:false,status:'WAITING'}});
-    if(!battle)throw Error('Nur ein eigenes offenes Battle kann abgebrochen werden');
-    const changed=await tx.battle.updateMany({where:{id:battleId,creatorId:u.id,status:'WAITING',guestId:null},data:{status:'CANCELED',finishedAt:new Date()}});
-    if(!changed.count)throw Error('Battle wurde bereits gestartet');
-    const c=await tx.case.findUniqueOrThrow({where:{id:battle.caseId}});
-    await tx.user.update({where:{id:u.id},data:{coins:{increment:c.price}}});
-    return tx.battle.findUniqueOrThrow({where:{id:battleId}});
+    const b=await tx.battle.findFirst({where:{id:battleId,creatorId:user.id,status:'WAITING',
+     againstBot:false,guestId:null},include:{rounds:true}});
+    if(!b)throw Error('Nur eigene offene Battles können abgebrochen werden');
+    const changed=await tx.battle.updateMany({where:{id:b.id,creatorId:user.id,status:'WAITING',guestId:null},
+     data:{status:'CANCELED',finishedAt:new Date()}});
+    if(changed.count!==1)throw Error('Battle bereits gestartet');
+    const total=b.totalCost||b.rounds.reduce((sum,r)=>sum+r.casePrice,0);
+    const fallback=total|| (await tx.case.findUniqueOrThrow({where:{id:b.caseId}})).price;
+    await tx.user.update({where:{id:user.id},data:{coins:{increment:fallback}}});
+    return tx.battle.findUniqueOrThrow({where:{id:b.id},include:{rounds:true}});
    },{isolationLevel:'Serializable'});
-   return NextResponse.json({battle:(await present([canceled],u.id))[0]});
+   return NextResponse.json({battle:(await present([canceled],user.id))[0]});
   }
-  return failed('Unbekannte Aktion',404);
- }catch(error){
-  console.error('Battle action:',error);
-  if(typeof error==='object'&&error!==null&&'code' in error&&error.code==='P2034')return failed('Battle wurde gleichzeitig geändert. Bitte erneut versuchen.',409);
-  const expected=['Case Battles brauchen eine kostenpflichtige Kiste','Diese Kiste ist derzeit nicht für Battles verfügbar','Du hast schon 3 offene Battles','Nicht genügend Guthaben','Battle nicht mehr offen','Du kannst nicht gegen dich selbst spielen','Kiste nicht verfügbar','Nicht genügend Items für diese Kiste','Battle bereits gestartet','Nur ein eigenes offenes Battle kann abgebrochen werden','Battle wurde bereits gestartet'];
-  return failed(error instanceof Error&&expected.includes(error.message)?error.message:'Battle konnte nicht abgeschlossen werden',400);
+  return fail('Unbekannte Battle-Aktion',404);
+ }catch(e){
+  console.error('Battle action:',e);
+  if(typeof e==='object'&&e!==null&&'code' in e&&e.code==='P2034')
+   return fail('Battle wurde gleichzeitig geändert. Bitte erneut versuchen.',409);
+  const expected=[
+   'Bitte 1 bis 10 Kisten auswählen','Mindestens eine ausgewählte Kiste ist nicht verfügbar',
+   'Ungültiger Gesamtpreis','Du hast bereits 3 offene Battles','Nicht genügend Guthaben',
+   'Battle nicht mehr offen','Du kannst nicht gegen dich selbst spielen','Kiste nicht verfügbar',
+   'Battle bereits gestartet','Nur eigene offene Battles können abgebrochen werden'
+  ];
+  return fail(e instanceof Error&&expected.includes(e.message)?e.message:'Battle konnte nicht abgeschlossen werden');
  }
 }
