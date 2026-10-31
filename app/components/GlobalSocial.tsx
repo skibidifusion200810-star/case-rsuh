@@ -76,6 +76,12 @@ export default function GlobalSocial(){
   const id=setInterval(()=>void refreshDrops(),5000);
   const openChat=()=>{setOpen(true);setTab('chat')};
   const openGift=()=>{setOpen(true);setTab('gift')};
+  const openAdmin=(e:KeyboardEvent)=>{
+   if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='a'){
+    e.preventDefault();window.location.assign('/admin');
+   }
+  };
+  window.addEventListener('keydown',openAdmin);
   window.addEventListener('cr-open-chat',openChat);
   window.addEventListener('cr-open-gift',openGift);
   return()=>{
@@ -83,6 +89,7 @@ export default function GlobalSocial(){
    if(alertTimer.current)clearTimeout(alertTimer.current);
    window.removeEventListener('cr-open-chat',openChat);
    window.removeEventListener('cr-open-gift',openGift);
+   window.removeEventListener('keydown',openAdmin);
   };
  },[]);
  useEffect(()=>{

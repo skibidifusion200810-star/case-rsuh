@@ -10,7 +10,7 @@ import TradingHub from './TradingHub';
 type Item={id:string,name:string,rarity:string,value:number,weight:number,imageUrl?:string|null,priceOrigin?:string,priceCheckedAt?:string|null,priceSourceUrl?:string|null};
 type Case={id:string,name:string,slug:string,price:number,imageUrl?:string|null,items:Item[]};
 type Inv={id:string,item:Item,valueAtDrop?:number|null,isDemo?:boolean,tradeLockId?:string|null,mergedCount:number};
-type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean};
+type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean,isAdmin?:boolean};
 const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
 const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':i.priceOrigin==='CSMONEY_MARKET_REFERENCE'?'Externe Marktpreisreferenz (Stand '+date+')':'Kein bestätigter Marktpreis'};
 const chance=(value:number,total:number)=>{
@@ -116,6 +116,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
    <Link href="/leaderboard" className={'game-nav-link '+(tab==='leaderboard'?'active':'')} aria-current={tab==='leaderboard'?'page':undefined}>BESTENLISTE</Link>
    <Link href="/upgrades" className={'game-nav-link '+(tab==='upgrades'?'active':'')} aria-current={tab==='upgrades'?'page':undefined}>UPGRADES</Link>
    <Link href="/trading" className={'game-nav-link '+(tab==='trading'?'active':'')} aria-current={tab==='trading'?'page':undefined}>TRADING</Link>
+   {me?.isAdmin&&<Link href="/admin" className="game-nav-link game-admin-link">ADMIN ↗</Link>}
    <button type="button" className="game-nav-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
   </nav>
   <div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><strong>{me.username}</strong><button onClick={()=>void act('logout')}>ABMELDEN</button></>:<button className="primary" onClick={()=>{setFormMode('login');setFormError('');setLogin(true)}}>ANMELDEN</button>}</div>

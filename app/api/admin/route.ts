@@ -11,12 +11,11 @@ const adminId=()=>process.env.ADMIN_USER_ID?.trim()||'';
 const adminConfigured=()=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(adminId());
 const maxGrant=100000000; // €1,000,000 virtual, integer cents.
 const usernameFilter=(q:string)=>({username:{contains:q,mode:'insensitive' as const}});
-const ownerId=adminId();
 
 async function access(req:NextRequest){
  const user=await socialViewer(req,db);
  if(!user)return {user:null,allowed:false,configured:adminConfigured()};
- return {user,allowed:adminConfigured()&&user.id===ownerId,configured:adminConfigured()};
+ return {user,allowed:adminConfigured()&&user.id===adminId(),configured:adminConfigured()};
 }
 async function log(tx:Prisma.TransactionClient, actor:{id:string;username:string},
  action:string,targetType:string,targetId:string,details:Record<string,unknown>){

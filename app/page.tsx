@@ -5,7 +5,7 @@ import {useEffect,useState} from 'react';
 import './home.css';
 
 type CasePreview={id:string;name:string;slug:string;price:number;imageUrl?:string|null;items?:{name:string;imageUrl?:string|null}[]};
-type Viewer={username:string;coins:number}|null;
+type Viewer={username:string;coins:number;isAdmin?:boolean}|null;
 const euros=(value:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value/100);
 const sections=[
  {href:'/cases',n:'01',label:'KISTEN',description:'Neun Kisten. Eigene Drops. Deine nächste Öffnung.',detail:'ARSENAL',icon:'◈'},
@@ -56,6 +56,7 @@ export default function Home(){
     <Link href="/leaderboard">BESTENLISTE</Link>
     <Link href="/upgrades">UPGRADES</Link>
     <Link href="/trading">TRADING</Link>
+    {me?.isAdmin&&<Link href="/admin">ADMIN ↗</Link>}
     <button type="button" className="landing-social-link" onClick={()=>window.dispatchEvent(new Event('cr-open-chat'))}>LIVE CHAT</button>
    </nav>
    <div className="landing-account">
