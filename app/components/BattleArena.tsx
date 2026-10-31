@@ -224,7 +224,7 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
         'Dein Team hat gewonnen! '+current.viewerAwardCount+' Items sind deinem Inventar gutgeschrieben.':
         'Gewonnen – die Gutschrift konnte noch nicht bestätigt werden. Bitte Inventar aktualisieren.':
         'Das andere Team hat gewonnen. Die Items gehören dem Siegerteam.'}</p>}
-      {current.winner===(current.viewerRole.startsWith('creator')?'creator':'guest')&&
+      {current.viewerRole!=='spectator'&&current.winner===(current.viewerRole.startsWith('creator')?'creator':'guest')&&
        <button className="primary wide" onClick={async()=>{await onChange();currentRef.current=null;setCurrent(null);window.dispatchEvent(new Event('case-rush-show-inventory'))}}>GEWINNE IM INVENTAR ANSEHEN</button>}
       <button className="secondary wide" onClick={()=>{animatedIds.current.delete(current.id);setAnimated(current)}}>ROTATION ERNEUT ANSEHEN</button>
      </>
