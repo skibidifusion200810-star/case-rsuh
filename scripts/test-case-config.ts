@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {caseDefs} from '../lib/case-config';
+import {balanceCaseWeights} from '../lib/case-balance';
 
 assert.equal(caseDefs.length,9,'Exactly nine cases');
 assert.equal(caseDefs[0].price,0,'Starter case free');
@@ -59,3 +60,13 @@ const freeRare=free.items.filter(x=>['RARE','EPIC','LEGENDARY','KNIFE'].includes
  .reduce((a,b)=>a+b.weight,0)/1_000_000;
 assert.ok(freeRare<=0.001,'Free case must have <=0.1% chance for Rare+');
 console.log('PASS: free rare rate', (freeRare*100).toFixed(4)+'%; nine distinct progressively premium pools');
+
+const simulated=balanceCaseWeights([
+ {id:'common',value:100,rarity:'UNCOMMON',weight:5000},
+ {id:'rare',value:30000,rarity:'LEGENDARY',weight:4300},
+ {id:'gold',value:250000,rarity:'KNIFE',weight:700}
+],500,0.88);
+assert.ok(simulated.expectedCents/500<=0.9,'RTP must not exceed 90% in test case');
+assert.ok(simulated.entries.every(x=>x.weight>0),'Premium drops remain possible');
+assert.ok(simulated.profitChance<0.1,'Most expensive wins should be rare');
+console.log('PASS source-based RTP cap and low jackpot probability');
