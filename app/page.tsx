@@ -1,141 +1,158 @@
 'use client';
+
+import Link from 'next/link';
 import {useEffect,useState} from 'react';
-import OpeningReel from './components/OpeningReel';
-import MultiOpeningReel from './components/MultiOpeningReel';
-import Leaderboard from './components/Leaderboard';
-import BattleArena from './components/BattleArena';
-import UpgradePanel from './components/UpgradePanel';
-type Item={id:string,name:string,rarity:string,value:number,weight:number,imageUrl?:string|null,priceOrigin?:string,priceCheckedAt?:string|null,priceSourceUrl?:string|null};
-type Case={id:string,name:string,slug:string,price:number,imageUrl?:string|null,items:Item[]};
-type Inv={id:string,item:Item,valueAtDrop?:number|null,isDemo?:boolean};
-type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean};
-const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
-const priceNote=(i:Item)=>{const date=i.priceCheckedAt?new Date(i.priceCheckedAt).toLocaleDateString('de-DE'):'Datum unbekannt';return i.priceOrigin==='CSMONEY_TRADE'?'CS.MONEY Trade (Drittanbieter, Stand '+date+')':i.priceOrigin==='BYMYKEL_USD_SNAPSHOT'?'Alter Preis-Snapshot vom '+date+' – nicht CS.MONEY':i.priceOrigin==='CSMONEY_MARKET_REFERENCE'?'Externe Marktpreisreferenz (Stand '+date+')':'Kein bestätigter Marktpreis'};
-const chance=(value:number,total:number)=>{
- const percent=total>0?value/total*100:0;
- return percent<0.01?percent.toFixed(4)+'%':percent<0.1?percent.toFixed(3)+'%':percent.toFixed(2)+'%';
-};
-const fmt=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
-function AssetImage({src,alt,kind}:{src?:string|null,alt:string,kind:'case'|'item'}){
+import './home.css';
+
+type CasePreview={id:string;name:string;slug:string;price:number;imageUrl?:string|null;items?:{name:string;imageUrl?:string|null}[]};
+type Viewer={username:string;coins:number}|null;
+const euros=(value:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value/100);
+const sections=[
+ {href:'/cases',n:'01',label:'KISTEN',description:'Neun Kisten. Eigene Drops. Deine nächste Öffnung.',detail:'ARSENAL',icon:'◈'},
+ {href:'/battles',n:'02',label:'CASE BATTLES',description:'Eigene Duelle erstellen und gegen Spieler oder Bots antreten.',detail:'PVP / BOTS',icon:'⚔'},
+ {href:'/inventory',n:'03',label:'INVENTAR',description:'Deine Skins ansehen, behalten oder virtuell verkaufen.',detail:'COLLECTION',icon:'▤'},
+ {href:'/leaderboard',n:'04',label:'BESTENLISTE',description:'Wer hat die meisten Öffnungen und das wertvollste Inventar?',detail:'RANKINGS',icon:'⌁'}
+] as const;
+function CaseVisual({src,alt,priority=false}:{src?:string|null;alt:string;priority?:boolean}){
  const [broken,setBroken]=useState(false);
  useEffect(()=>setBroken(false),[src]);
  return src&&!broken
-   ? <img src={src} alt={alt} className={'art-img art-'+kind} loading="lazy" referrerPolicy="no-referrer" onError={()=>setBroken(true)}/>
-   : <span className={'art-placeholder art-'+kind} aria-label="Bild nicht verfügbar">✦</span>;
+  ? <img src={src} alt={alt} loading={priority?'eager':'lazy'} referrerPolicy="no-referrer" onError={()=>setBroken(true)}/>
+  : <span className="landing-art-fallback" aria-label={alt}>◈</span>;
 }
 export default function Home(){
- const [multiWins,setMultiWins]=useState<{item:Item,inventoryId:string}[]>([]);
- const [multiSaleValue,setMultiSaleValue]=useState<number|null>(null);
- const [lastOpening,setLastOpening]=useState<{caseId:string,count:number}|null>(null);
- const [multiSpin,setMultiSpin]=useState<{drops:{item:Item,inventoryId:string}[],pool:Item[]}|null>(null);
- const [caseCount,setCaseCount]=useState(1);
- const [spin,setSpin]=useState<{item:Item,inventoryId:string,isDemo:boolean,pool:Item[]}|null>(null);
- const [reducedMotion,setReducedMotion]=useState(false);
- const [formMode,setFormMode]=useState<'login'|'register'>('login'),[formError,setFormError]=useState('');
- const [cases,setCases]=useState<Case[]>([]),[me,setMe]=useState<User|null>(null),[inventory,setInventory]=useState<Inv[]>([]),[tab,setTab]=useState('cases'),[error,setError]=useState(''),[busy,setBusy]=useState(false),[login,setLogin]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[win,setWin]=useState<{item:Item,inventoryId:string,isDemo?:boolean}|null>(null),[detail,setDetail]=useState<Case|null>(null);
- async function get(url:string){const r=await fetch(url,{cache:'no-store'});if(!r.ok){const j=await r.json().catch(()=>({}));throw Error(j.error||'Serververbindung fehlgeschlagen ('+r.status+')')}return r.json()}
- async function refresh(){try{const [c,m]=await Promise.all([get('/api/game?action=cases'),get('/api/game?action=me')]);setCases(c.cases);setMe(m.user);setInventory(m.user?(await get('/api/game?action=inventory')).items:[]);setError('')}catch(e){setError(e instanceof Error?e.message:String(e))}}
- useEffect(()=>{void refresh();setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)},[]);
+ const [cases,setCases]=useState<CasePreview[]>([]);
+ const [me,setMe]=useState<Viewer>(null);
+ const [loading,setLoading]=useState(true);
+ const [unavailable,setUnavailable]=useState(false);
  useEffect(()=>{
-  const showInventory=()=>{setTab('inventory');void refresh()};
-  window.addEventListener('case-rush-show-inventory',showInventory);
-  return()=>window.removeEventListener('case-rush-show-inventory',showInventory);
+  let active=true;
+  const load=async()=>{
+   const [c,u]=await Promise.allSettled([
+    fetch('/api/game?action=cases',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Cases unavailable');return r.json()}),
+    fetch('/api/game?action=me',{cache:'no-store'}).then(r=>r.ok?r.json():{user:null})
+   ]);
+   if(!active)return;
+   if(c.status==='fulfilled'&&Array.isArray(c.value.cases)){setCases(c.value.cases);setUnavailable(false)}
+   else setUnavailable(true);
+   if(u.status==='fulfilled')setMe(u.value.user??null);
+   setLoading(false);
+  };
+  void load();
+  return()=>{active=false};
  },[]);
- useEffect(()=>{if(tab==='inventory')void refresh()},[tab]);
- async function act(action:string,other:Record<string,unknown>={}){setBusy(true);setError('');setFormError('');try{const r=await fetch('/api/game',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...other})});const j=await r.json().catch(()=>({error:'Server noch nicht erreichbar. Bitte später erneut versuchen.'}));if(!r.ok)throw Error(j.error||'Serverfehler ('+r.status+')');await refresh();return j}catch(e){const message=e instanceof Error?e.message:String(e);setError(message);setFormError(message);return null}finally{setBusy(false)}}
- async function open(c:Case,requestedCount?:number){
-  if(!me){setFormMode('login');setFormError('');setLogin(true);return}
-  const count=c.price===0?1:requestedCount??caseCount;
-  if(!Number.isInteger(count)||count<1||count>(me.openSlots||1)){
-   setError('Für diese Anzahl benötigst du das passende Mehrfachöffnungs-Upgrade.');
-   return;
-  }
-  const j=await act('open',{caseId:c.id,count});
-  if(j){
-   setDetail(null);
-   setLastOpening({caseId:c.id,count});
-   setMultiSaleValue(null);
-   if(Array.isArray(j.results)){
-    setMultiWins([]);
-    if(reducedMotion)setMultiWins(j.results);
-    else setMultiSpin({drops:j.results,pool:c.items});
-   }
-   else if(reducedMotion)setWin(j);
-   else setSpin({...j,pool:c.items});
-  }
- }
- async function sell(id:string){const j=await act('sell',{inventoryId:id});if(j){setWin(null);setMultiWins(prev=>prev.filter(x=>x.inventoryId!==id))}}
- async function sellAll(){
-  if(!multiWins.length)return;
-  const j=await act('sellBatch',{inventoryIds:multiWins.map(x=>x.inventoryId)});
-  if(j){setMultiWins([]);setMultiSaleValue(j.value)}
- }
- async function reopen(){
-  if(!lastOpening||busy)return;
-  const c=cases.find(x=>x.id===lastOpening.caseId);
-  if(!c){setError('Kiste nicht mehr verfügbar.');return}
-  if(!me){setLogin(true);return}
-  if(me.coins<c.price*lastOpening.count){
-   setError('Nicht genügend virtuelles Guthaben für die gleiche Öffnung.');
-   return;
-  }
-  const count=lastOpening.count;
-  setWin(null);
-  setMultiWins([]);
-  setMultiSaleValue(null);
-  await open(c,count);
- }
- const previousCase=lastOpening?cases.find(x=>x.id===lastOpening.caseId):null;
- const canReopen=!!me&&!!previousCase&&!busy&&
-  me.coins>=previousCase.price*lastOpening!.count&&
-  lastOpening!.count<=(me.openSlots||1);
- const reopenLabel=previousCase&&lastOpening?
-  'ERNEUT ÖFFNEN · '+lastOpening.count+'× '+previousCase.name+' · '+fmt(previousCase.price*lastOpening.count):'ERNEUT ÖFFNEN';
- return <><header className="top"><a className="logo" href="/">CASE <b>RUSH</b><i>.</i></a><nav><button onClick={()=>setTab('cases')}>KISTEN</button><button onClick={()=>setTab('inventory')}>INVENTAR</button><button onClick={()=>setTab('battles')}>BATTLES</button><button onClick={()=>setTab('upgrades')}>UPGRADES</button><button onClick={()=>setTab('leaderboard')}>BESTENLISTE</button></nav><div className="profile">{me?<><span className="coins">{fmt(me.coins)}</span><strong>{me.username}</strong><button onClick={()=>void act('logout')}>Abmelden</button></>:<button className="primary" onClick={()=>{setFormMode("login");setFormError("");setLogin(true)}}>ANMELDEN</button>}</div></header><section className="hero"><div className="small">THE NEXT DROP IS YOURS</div><h1>YOUR CASE.<br/><em>YOUR RUSH.</em></h1><p>CS2-Skins mit Bildern aus dem ByMykel-Katalog. Alle Beträge sind virtuelle Spielwerte ohne Geldwert. Ein-Cent-Werte beruhen auf Quellen für genau die angezeigte Skin-Abnutzung. Nur explizit markierte Preise stammen aus CS.MONEY Trade.</p></section><main>{error&&<div className="error">{error}</div>}{tab==='cases'?<><div className="eyebrow">01 / THE ARSENAL</div><div className="section-head"><h2>CHOOSE YOUR <em>CASE.</em></h2><span>{cases.length.toString().padStart(2,'0')} KISTEN</span></div><div className="case-grid">{cases.map(c=><button className="case" key={c.id} onClick={()=>{setCaseCount(1);setDetail(c)}}><div className="case-visual"><AssetImage src={c.imageUrl} alt={c.name+" Kistenbild"} kind="case"/><span>CR / {c.slug.toUpperCase()}</span></div><h3>{c.name}</h3><p>{c.price===0?'KOSTENLOS':fmt(c.price)+' VIRTUELL'}</p><span className="case-bottom">ÖFFNEN →</span></button>)}</div></>:tab==='inventory'?<><h2>DEIN <em>INVENTAR</em></h2>{!me?<p>Bitte anmelden.</p>:<div className="item-grid">{inventory.map(i=><article key={i.id} className="item" style={{borderTopColor:rarityColor[i.item.rarity]}}><small>{i.item.rarity}</small><AssetImage src={i.item.imageUrl} alt={i.item.name} kind="item"/><h3>{i.item.name}</h3><p>{fmt(i.valueAtDrop??i.item.value)} <small>virtuell · Wert bei Ziehung</small></p><button className="primary" disabled={busy} onClick={()=>void sell(i.id)}>VERKAUFEN</button></article>)}</div>}</>:tab==='leaderboard'?<Leaderboard/>:tab==='upgrades'?<UpgradePanel slots={me?.openSlots??1} coins={me?.coins??0} purchase={async tier=>!!(await act('upgrade',{tier}) )}/>:<BattleArena cases={cases} me={me} onChange={refresh}/>}</main><footer>CASE RUSH · Guthaben und Itemwerte in virtuellen € ohne Geldwert · Keine Auszahlungen · Bilder/Itemdaten: ByMykel CSGO-API, CS2-Assets © jeweilige Rechteinhaber · Unabhängiges Fanprojekt.</footer>{detail&&<div className="overlay" onClick={()=>setDetail(null)}><section className="modal detail" onClick={e=>e.stopPropagation()}><button className="x" onClick={()=>setDetail(null)}>✕</button><div className="eyebrow">OPEN CASE</div><h2>{detail.name.toUpperCase()}</h2><p>{detail.price===0?'Kostenlos & unbegrenzt – nach 3 Sekunden erneut öffnen. Gratis-Gewinne sind verkaufbar.':fmt(detail.price)+' (virtuell) pro Öffnung'}</p><h3>MÖGLICHE ITEMS / DROP-CHANCEN</h3><p className="drop-explainer">Die Prozentwerte sind deine echten Gewinnchancen pro Öffnung. Die Preise sind virtuelle Verkaufswerte, keine auszahlbaren Marktpreise.</p>
- <div className="drop-head"><span>WAFFE / ZUSTAND</span><span>VIRTUELLER WERT</span><span>CHANCE</span></div>
- {detail.items.slice().sort((a,b)=>b.value-a.value).map(i=><div key={i.id} className="drop">
-   <div className="drop-title"><AssetImage src={i.imageUrl} alt={i.name} kind="item"/><strong style={{color:rarityColor[i.rarity]}}>{i.name}</strong></div>
-   <div className="drop-price">{fmt(i.value)}</div>
-   <div className="drop-odds">{chance(i.weight,detail.items.reduce((sum,x)=>sum+x.weight,0))}</div>
-   <div className="drop-source"><span>{priceNote(i)}</span>{i.priceSourceUrl&&<a href={i.priceSourceUrl} target="_blank" rel="noopener noreferrer">Preisquelle ansehen</a>}</div>
- </div>)}{detail.price>0&&<div className="multi-picker">
-   <div className="eyebrow">MEHRFACHÖFFNUNG · LIMIT {me?.openSlots??1}×</div>
-   <div className="multi-options">{[1,2,4,8,10].map(n=><button key={n} disabled={n>(me?.openSlots??1)}
-    className={caseCount===n?'active':''} onClick={()=>setCaseCount(n)}>{n}×</button>)}</div>
-   <p>Gesamtpreis: <strong>{fmt(detail.price*Math.min(caseCount,me?.openSlots??1))}</strong> virtuell</p>
-   {(me?.openSlots??1)<10&&<button className="multi-upgrade-link" onClick={()=>{setDetail(null);setTab('upgrades')}}>Weitere Slots freischalten →</button>}
-  </div>}
- <label className="reduce-label"><input type="checkbox" checked={reducedMotion} onChange={e=>setReducedMotion(e.target.checked)}/> Bewegungen reduzieren</label>
- <button className="primary wide" disabled={busy||detail.items.length===0} onClick={()=>void open(detail)}>{busy?'LÄDT ...':detail.items.length===0?'KEINE GEPRÜFTEN PREISE':'KISTE ÖFFNEN'}</button></section></div>}{spin&&<OpeningReel winner={spin.item} pool={spin.pool} reducedMotion={reducedMotion} onFinish={()=>{setWin(spin);setSpin(null)}}/>}
- {multiSpin&&<MultiOpeningReel drops={multiSpin.drops} pool={multiSpin.pool} reducedMotion={reducedMotion} onFinish={()=>{setMultiWins(multiSpin.drops);setMultiSpin(null)}}/>}{(multiWins.length>0||multiSaleValue!==null)&&<div className="overlay" onClick={()=>{setMultiWins([]);setMultiSaleValue(null)}}>
-  <section className="modal multi-modal" onClick={e=>e.stopPropagation()}>
-   <button className="x" onClick={()=>{setMultiWins([]);setMultiSaleValue(null)}}>✕</button>
-   <div className="eyebrow">MULTI DROP</div><h2>{multiSaleValue!==null?'ALLE ITEMS':'DEINE '+multiWins.length} <em>{multiSaleValue!==null?'VERKAUFT.':'GEWINNE.'}</em></h2>
-   <p>{multiSaleValue!==null?'Dein Verkaufserlös wurde deinem virtuellen Guthaben gutgeschrieben: '+fmt(multiSaleValue):'Verkaufe einzelne Gewinne oder alle Items mit einem Klick.'}</p>
-   <div className="multi-results">{multiWins.map(result=><div className="multi-result" key={result.inventoryId}>
-    <AssetImage src={result.item.imageUrl} alt={result.item.name} kind="item"/>
-    <strong>{result.item.name}</strong>
-    <span>{fmt(result.item.value)}</span>
-    <button className="primary" disabled={busy} onClick={()=>void sell(result.inventoryId)}>VERKAUFEN</button>
-   </div>)}</div>
-   {multiWins.length>0&&<div className="multi-sale-summary">
-    <span>{multiWins.length} ITEMS · GESAMTWERT <strong>{fmt(multiWins.reduce((sum,x)=>sum+x.item.value,0))}</strong></span>
-    <button className="primary" disabled={busy} onClick={()=>void sellAll()}>{busy?'VERKAUFT…':'ALLES VERKAUFEN'}</button>
-   </div>}
-   {lastOpening&&<button className="primary wide reopen" disabled={!canReopen} onClick={()=>void reopen()}>{reopenLabel}</button>}
-   <button className="secondary wide" onClick={()=>{setMultiWins([]);setMultiSaleValue(null)}}>SCHLIESSEN / ITEMS BEHALTEN</button>
-  </section>
- </div>}{win&&<div className="overlay"><section className="modal win"><div className="eyebrow">NEW DROP</div><div className="win-star" style={{color:rarityColor[win.item.rarity]}}><AssetImage src={win.item.imageUrl} alt={win.item.name} kind="item"/></div><small>{win.item.rarity}</small><h2>{win.item.name}</h2><p>{fmt(win.item.value)} virtuell · {priceNote(win.item)}</p><button className="primary wide" disabled={busy} onClick={()=>void sell(win.inventoryId)}>SOFORT VERKAUFEN</button>{lastOpening&&<button className="primary wide reopen" disabled={!canReopen} onClick={()=>void reopen()}>{reopenLabel}</button>}<button className="wide secondary" onClick={()=>setWin(null)}>INS INVENTAR LEGEN</button></section></div>}{login&&<div className="overlay" onClick={()=>setLogin(false)}>
- <form className="modal auth" onClick={e=>e.stopPropagation()} onSubmit={async e=>{e.preventDefault();const j=await act(formMode,{username,password});if(j){setLogin(false);setPassword('')}}}>
- <button type="button" className="x" onClick={()=>setLogin(false)}>✕</button>
- <div className="eyebrow">DEIN ACCOUNT</div><h2>{formMode==='register'?'KONTO ERSTELLEN':'EINLOGGEN'}</h2>
- <label htmlFor="cr-user">Benutzername</label>
- <input id="cr-user" autoComplete="username" value={username} minLength={3} maxLength={24} pattern="[a-zA-Z0-9_]+" onChange={e=>setUsername(e.target.value)} placeholder="3–24 Zeichen, Buchstaben/Zahlen/_" required/>
- <label htmlFor="cr-password">Passwort</label>
- <input id="cr-password" autoComplete={formMode==='register'?'new-password':'current-password'} value={password} minLength={10} maxLength={128} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Mindestens 10 Zeichen" required/>
- {formError&&<div className="auth-error" role="alert">{formError}</div>}
- <button className="primary wide" type="submit" disabled={busy}>{busy?'BITTE WARTEN...':formMode==='register'?'KONTO ERSTELLEN':'ANMELDEN'}</button>
- <button className="secondary wide" type="button" disabled={busy} onClick={()=>{setFormMode(formMode==='login'?'register':'login');setFormError('');setError('')}}>{formMode==='login'?'NOCH KEIN KONTO? REGISTRIEREN':'SCHON REGISTRIERT? ANMELDEN'}</button>
- <p className="auth-info">Neue Konten erhalten 5,00 € virtuelles Startguthaben. Die kostenlose Kiste kann unbegrenzt geöffnet werden und ihre Gewinne sind verkaufbar. Kein Echtgeld.</p>
- </form>
- </div>}</>}
+ const highlighted=['first-drop','butterfly-vault','karambit-eclipse']
+  .map(slug=>cases.find(c=>c.slug===slug)).filter((c):c is CasePreview=>!!c);
+ const feature=cases.find(c=>c.slug==='butterfly-vault')??cases.find(c=>c.price>0)??null;
+ const extra=cases.find(c=>c.slug==='karambit-eclipse')??null;
+ return <div className="landing">
+  <div className="landing-glow" aria-hidden="true"/>
+  <header className="landing-header">
+   <Link href="/" className="landing-brand" aria-label="CASE RUSH Startseite">CASE<span>RUSH</span><i>.</i></Link>
+   <nav aria-label="Hauptnavigation" className="landing-navigation">
+    <Link href="/cases">KISTEN</Link>
+    <Link href="/battles">CASE BATTLES</Link>
+    <Link href="/inventory">INVENTAR</Link>
+    <Link href="/leaderboard">BESTENLISTE</Link>
+    <Link href="/upgrades">UPGRADES</Link>
+   </nav>
+   <div className="landing-account">
+    {me?<><span className="landing-balance">{euros(me.coins)}</span><Link href="/inventory" className="landing-user">{me.username}</Link></>:
+      <Link href="/cases?auth=login" className="landing-signin">ANMELDEN</Link>}
+    <Link className="landing-header-cta" href="/cases">ZUM SPIEL <span>↗</span></Link>
+   </div>
+  </header>
+  <main className="landing-main">
+   <section className="landing-hero" aria-labelledby="landing-title">
+    <div className="landing-hero-grid" aria-hidden="true"/>
+    <div className="landing-hero-inner">
+     <div className="landing-hero-copy">
+      <div className="landing-eyebrow"><span className="landing-signal"/> THE NEXT DROP IS YOURS <span className="landing-hero-id">/ 001</span></div>
+      <h1 id="landing-title">OPEN.<br/><span>COLLECT.</span><br/><em>COMPETE.</em></h1>
+      <p>Dein nächster Drop wartet. Öffne virtuelle CS2-inspirierte Kisten, sammle Skins und tritt in Case Battles gegen andere Spieler oder Bots an.</p>
+      <div className="landing-actions">
+       <Link href="/cases" className="landing-button landing-button-primary">KISTEN ENTDECKEN <span aria-hidden="true">↗</span></Link>
+       <Link href="/battles" className="landing-button landing-button-outline">CASE BATTLES <span aria-hidden="true">↗</span></Link>
+      </div>
+      <div className="landing-hero-meta">
+       <span><strong>{loading?'—':cases.length||'—'}</strong> KISTEN IM SPIEL</span>
+       <span className="landing-meta-divider"/>
+       <span><strong>0,00 €</strong> STARTER-KISTE</span>
+       <span className="landing-meta-divider"/>
+       <span><strong>10×</strong> MULTI-OPEN</span>
+      </div>
+     </div>
+     <div className="landing-hero-art">
+      <div className="landing-art-crosshair" aria-hidden="true"/>
+      <div className="landing-art-ring ring-one" aria-hidden="true"/>
+      <div className="landing-art-ring ring-two" aria-hidden="true"/>
+      <div className="landing-art-orbit orbit-one" aria-hidden="true"/>
+      <div className="landing-art-orbit orbit-two" aria-hidden="true"/>
+      <div className="landing-art-label label-top"><span>FEATURED DROP</span><strong>{feature?.name??'CASE RUSH'}</strong></div>
+      <div className="landing-main-case">
+       <CaseVisual src={feature?.imageUrl} alt={feature?.name??'CASE RUSH Kiste'} priority/>
+      </div>
+      {extra&&<div className="landing-side-case"><CaseVisual src={extra.imageUrl} alt={extra.name}/></div>}
+      <div className="landing-art-price">
+       <span>VIRTUELLER KISTENPREIS</span>
+       <strong>{feature?euros(feature.price):loading?'LÄDT…':'—'}</strong>
+       <Link href="/cases">JETZT ANSEHEN <span>↗</span></Link>
+      </div>
+      <div className="landing-art-bottom">CASE RUSH <span>///</span> UNBOX EXPERIENCE</div>
+     </div>
+    </div>
+    <div className="landing-scroll-hint" aria-hidden="true"><span/> SCROLL TO EXPLORE</div>
+   </section>
+   <div className="landing-marquee" aria-hidden="true">
+    <div className="landing-marquee-track">{Array.from({length:2},(_,i)=><div key={i} className="landing-marquee-group">
+     <span>CASE OPENING</span><b>✦</b><span>RARE DROPS</span><b>✦</b><span>CASE BATTLES</span><b>✦</b><span>BUILD YOUR INVENTORY</span><b>✦</b>
+    </div>)}</div>
+   </div>
+   <section className="landing-featured" id="cases">
+    <div className="landing-section-top">
+     <div><div className="landing-kicker">01 / THE COLLECTION</div><h2>KISTEN, DIE <em>AUFFALLEN.</em></h2><p>Von der kostenlosen Öffnung bis zum seltenen Highlight. Jede Kiste hat ihre eigenen Drops und Wahrscheinlichkeiten.</p></div>
+     <Link href="/cases" className="landing-text-link">ALLE KISTEN ANSEHEN <span>↗</span></Link>
+    </div>
+    <div className="landing-featured-grid">
+     {highlighted.length?highlighted.map((c,i)=><Link href="/cases" className={'landing-case-card landing-case-card-'+i} key={c.id}>
+      <div className="landing-card-upper"><span>0{i+1} / SELECTED CASE</span><span>↗</span></div>
+      <div className="landing-case-illustration"><div className="landing-case-halo"/><CaseVisual src={c.imageUrl} alt={c.name}/></div>
+      <div className="landing-card-footer"><div><span>{c.price===0?'FREE OPENING':'VIRTUAL CASE'}</span><h3>{c.name}</h3></div><strong>{c.price===0?'GRATIS':euros(c.price)}</strong></div>
+     </Link>):<div className="landing-load-cases">
+       <span className="landing-faint-symbol">◈</span>
+       <h3>{loading?'KISTEN WERDEN GELADEN':unavailable?'KISTEN DERZEIT NICHT VERFÜGBAR':'NOCH KEINE KISTEN'}</h3>
+       <p>{unavailable?'Die Verbindung zur Datenbank konnte nicht hergestellt werden.':'Die aktuellen Kisten und Preise werden aus dem Spiel geladen.'}</p>
+       <Link href="/cases" className="landing-text-link">ZUM ARSENAL ↗</Link>
+      </div>}
+    </div>
+   </section>
+   <section className="landing-hub">
+    <div className="landing-section-top">
+     <div><div className="landing-kicker">02 / YOUR PLAYGROUND</div><h2>DEIN SPIEL. <em>DEINE ROUTE.</em></h2><p>Alles an einem Ort – mit eigenen Bereichen für jeden Teil des Spiels.</p></div>
+    </div>
+    <div className="landing-hub-grid">
+     {sections.map(s=><Link href={s.href} className="landing-hub-tile" key={s.href}>
+      <div className="landing-tile-top"><span>{s.n} / {s.detail}</span><span className="landing-tile-arrow">↗</span></div>
+      <div className="landing-tile-symbol" aria-hidden="true">{s.icon}</div>
+      <div><h3>{s.label}</h3><p>{s.description}</p></div>
+     </Link>)}
+    </div>
+   </section>
+   <section className="landing-endcap">
+    <div className="landing-endcap-glow" aria-hidden="true"/>
+    <div className="landing-kicker">03 / READY WHEN YOU ARE</div>
+    <h2>DEIN NÄCHSTER<br/><em>DROP WARTET.</em></h2>
+    <p>Öffne die kostenlose Kiste oder starte direkt in die Arena.</p>
+    <div className="landing-actions landing-actions-center">
+     <Link href="/cases" className="landing-button landing-button-primary">JETZT STARTEN <span>↗</span></Link>
+     <Link href="/battles" className="landing-button landing-button-outline">BATTLES ENTDECKEN <span>↗</span></Link>
+    </div>
+   </section>
+  </main>
+  <footer className="landing-footer">
+   <Link href="/" className="landing-brand">CASE<span>RUSH</span><i>.</i></Link>
+   <span>Virtuelle € ohne Echtgeldwert · Keine Ein- oder Auszahlungen · Unabhängiges Fanprojekt.</span>
+   <Link href="/cases">ZUM SPIEL ↗</Link>
+  </footer>
+ </div>;
+}
