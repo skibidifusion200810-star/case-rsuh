@@ -1,9 +1,24 @@
 # CASE RUSH
 
+## Website und Navigation (November 2026)
+
+Die Website hat eine eigenständige, animierte Startseite und **echte Unterseiten**:
+
+- `/`: Landingpage mit CSS-Animationen, schwebender Kistengrafik, animiertem Ticker, Hover-Interaktionen und direkt aus `GET /api/game?action=cases` geladenen aktuellen Kistenbildern und Preisen.
+- `/cases`: Kistenübersicht, Drops/Chancen, Öffnung, Mehrfachöffnung und Wiederholungsfunktion.
+- `/battles`: Case-Battle-Builder, Bot- oder Spielerduelle und Rotationsanimation.
+- `/inventory`: persönliches Inventar und Verkauf.
+- `/leaderboard`: öffentliche Guthaben-, Inventarwert- und Öffnungsranglisten.
+- `/upgrades`: permanente Mehrfachöffnungs-Upgrades.
+
+Die Spielansichten verwenden gemeinsam `app/components/GameApp.tsx` und behalten dadurch die vorhandenen authentifizierten Serverfunktionen bei. Jede Unterseite ist direkt per URL erreichbar, hat ihren aktiven Navigationszustand und einen eigenen Titel. Die Landingpage befindet sich in `app/page.tsx`, ihr Design in `app/home.css`. Die Animationen sind rein visuell, ohne Einfluss auf Gewinnchancen; CSS respektiert `prefers-reduced-motion`. Für die Landingpage werden keine erfundenen Spieler- oder Gewinndaten angezeigt.
+
+Von der Startseite führen die Anmelde- und Spielbuttons nach `/cases?auth=login` bzw. `/cases`; die Kontoerstellung ist im Anmeldedialog erreichbar.
+
 Virtuelles Kisten-Spiel auf Next.js, Prisma und PostgreSQL.
 
 ## Aktueller Stand
-Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, unbegrenzt kostenlose Übungskiste mit selteneren Premium-Drops, individuelle Kistenpools und horizontale Öffnungsanimation, Inventar und Sofortverkauf sind implementiert. Es gibt noch **keine** echten Case Battles, Bots, Adminpanel oder vollständige Sicherheitsüberprüfung. Keine Echtgeldtransaktionen oder Auszahlungen.
+Registrierung, Login, serverseitige Sitzung, neun virtuelle Kisten, unbegrenzt kostenlose Starter-Kiste, horizontale Single- und Multi-Opening-Animationen, Inventar, Einzel-/Sammelverkauf, mehrteilige Case Battles gegen Spieler oder Bots, Upgrades und Bestenlisten sind implementiert. Ein Adminpanel und die vollständige Sicherheits-/Lastprüfung fehlen weiterhin. Keine Echtgeldtransaktionen oder Auszahlungen.
 
 ## CS2-Itemdaten und Bilder
 Die Kisten und Skins werden bei `npm run db:seed` aus der [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API) importiert, die auch von [ByMykel/counter-strike-items](https://github.com/ByMykel/counter-strike-items) verwendet wird.
