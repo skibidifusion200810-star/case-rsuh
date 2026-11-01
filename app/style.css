@@ -533,3 +533,78 @@ header.top nav{flex-wrap:wrap;justify-content:center}
 
 /* Fixed global navigation: event and announcement bars scroll away, menu does not. */
 header.top.game-header{position:fixed!important;top:0!important;left:0;right:0;width:100%;z-index:80!important}
+
+/* CASE RUSH header: no invisible navigation row or clipped links at any width. */
+header.top.game-header{
+  position:fixed!important;
+  inset:0 0 auto 0!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:72px;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center!important;
+  justify-content:initial!important;
+  gap:16px!important;
+  padding:12px clamp(16px,3vw,48px)!important;
+  overflow:visible!important;
+  background:#14171c!important;
+}
+header.top.game-header .game-logo{grid-column:1;min-width:0}
+header.top.game-header nav{
+  grid-column:2;
+  grid-row:1;
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:center!important;
+  align-self:center!important;
+  margin:0!important;
+  padding:0 0 5px!important;
+  min-width:0!important;
+  width:100%!important;
+  height:auto!important;
+  max-width:none!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  gap:clamp(10px,1vw,18px)!important;
+}
+header.top.game-header nav .game-nav-link{
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  position:relative;
+  height:auto!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:11px 0!important;
+  line-height:16px!important;
+  transform:none!important;
+}
+header.top.game-header nav .game-nav-link:after{bottom:3px!important}
+header.top.game-header .profile{
+  grid-column:3;
+  grid-row:1;
+  min-width:0;
+  justify-self:end;
+}
+@media(max-width:1450px){
+ header.top.game-header{grid-template-columns:minmax(0,1fr) auto;row-gap:6px!important}
+ header.top.game-header .game-logo{grid-column:1;grid-row:1}
+ header.top.game-header .profile{grid-column:2;grid-row:1}
+ header.top.game-header nav{
+  grid-column:1/-1!important;
+  grid-row:2!important;
+  justify-content:flex-start!important;
+  order:unset!important;
+  flex:initial!important;
+  gap:22px!important;
+ }
+}
+@media(max-width:540px){
+ header.top.game-header{padding:10px 12px!important;column-gap:8px!important}
+ header.top.game-header .profile{gap:6px;max-width:75vw}
+ header.top.game-header nav{gap:17px!important}
+ header.top.game-header nav .game-nav-link{font-size:10px!important}
+}
