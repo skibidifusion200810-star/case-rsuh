@@ -238,3 +238,26 @@ model UserAccessLog {
  createdAt DateTime @default(now())
  @@index([userId,createdAt])
 }
+
+model WatchlistEntry {
+ userId String @id
+ reason String @db.VarChar(500)
+ createdAt DateTime @default(now())
+ createdBy String
+ lastCheckedAt DateTime?
+ lastBalance Int?
+ lastOpeningCount Int?
+ @@index([createdAt])
+}
+
+model WatchAlert {
+ id String @id @default(uuid())
+ userId String
+ category String @db.VarChar(48)
+ description String @db.VarChar(500)
+ details String @default("{}")
+ createdAt DateTime @default(now())
+ resolvedAt DateTime?
+ @@index([userId,createdAt])
+ @@index([resolvedAt,createdAt])
+}
