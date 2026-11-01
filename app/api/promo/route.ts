@@ -1,9 +1,11 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
+import {maintenanceBlocked} from '@/lib/maintenance';
 import {socialViewer} from '@/lib/social';
 export const dynamic='force-dynamic';
 export async function POST(req:NextRequest){
  const user=await socialViewer(req,db);if(!user)return NextResponse.json({error:'Bitte anmelden'},{status:401});
+ if(await maintenanceBlocked(user.id))return NextResponse.json({error:'Wartungsmodus aktiv'},{status:503});
  const origin=req.headers.get('origin'),host=req.headers.get('x-forwarded-host')||req.headers.get('host');
  if(!origin||!host)return NextResponse.json({error:'Ungültige Anfragequelle'},{status:403});
  try{if(new URL(origin).host!==host)return NextResponse.json({error:'Ungültige Anfragequelle'},{status:403})}catch{return NextResponse.json({error:'Ungültige Anfragequelle'},{status:403})}
