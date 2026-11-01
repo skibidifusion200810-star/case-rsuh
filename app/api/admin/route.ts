@@ -32,6 +32,15 @@ export async function GET(req:NextRequest){
    configured:gate.configured,accountId:gate.user.id
   });
   const view=req.nextUrl.searchParams.get('view')||'overview';
+  if(view==='watchlist'){
+   const [entries,alerts]=await Promise.all([
+    db.watchlistEntry.findMany({orderBy:{createdAt:'desc'},take:100}),
+    db.watchAlert.findMany({orderBy:{createdAt:'desc'},take:100})
+   ]);
+   const users=await db.user.findMany({where:{id:{in:entries.map(e=>e.userId)}},select:{id:true,username:true,coins:true,lastSeenAt:true}});
+   const names=new Map(users.map(u=>[u.id,u]));
+   return NextResponse.json({entries:entries.map(e=>({...e,user:names.get(e.userId)||null})),alerts},{headers:noStore});
+  }
   if(view==='status')return NextResponse.json({admin:true,username:gate.user.username},{headers:noStore});
   if(view==='events'){
    const [event,recent]=await Promise.all([
@@ -124,6 +133,62 @@ export async function POST(req:NextRequest){
   const input=await req.json() as Record<string,unknown>;
   if(!input||Array.isArray(input)||typeof input!=='object')return fail('Ungültige Anfrage');
   const action=typeof input.action==='string'?input.action:'';
+  if(action==='watchUser'){
+   const userId=typeof input.userId==='string'?input.userId:'';
+   const reason=typeof input.reason==='string'?input.reason.trim().slice(0,500):'Manuelle Überprüfung';
+   const target=await db.user.findUnique({where:{id:userId},select:{id:true,username:true,coins:true}});
+   if(!target)return fail('Spieler nicht gefunden',404);
+   const openings=await db.opening.count({where:{userId}});
+   const entry=await db.$transaction(async tx=>{
+    const saved=await tx.watchlistEntry.upsert({where:{userId},create:{userId,reason:reason||'Manuelle Überprüfung',createdBy:actor.id,lastBalance:target.coins,lastOpeningCount:openings,lastCheckedAt:new Date()},update:{reason:reason||'Manuelle Überprüfung'}});
+    await log(tx,actor,'WATCH_USER','USER',userId,{username:target.username,reason});return saved;
+   });
+   return NextResponse.json({ok:true,entry},{headers:noStore});
+  }
+  if(action==='unwatchUser'){
+   const userId=typeof input.userId==='string'?input.userId:'';
+   await db.$transaction(async tx=>{
+    await tx.watchlistEntry.deleteMany({where:{userId}});
+    await log(tx,actor,'UNWATCH_USER','USER',userId,{});
+   });
+   return NextResponse.json({ok:true},{headers:noStore});
+  }
+  if(action==='resolveWatchAlert'){
+   const id=typeof input.alertId==='string'?input.alertId:'';
+   const updated=await db.watchAlert.updateMany({where:{id,resolvedAt:null},data:{resolvedAt:new Date()}});
+   if(!updated.count)return fail('Offener Alarm nicht gefunden',404);
+   await db.adminAuditLog.create({data:{actorId:actor.id,actorUsername:actor.username,action:'RESOLVE_WATCH_ALERT',targetType:'WATCH_ALERT',targetId:id,details:'{}'}});
+   return NextResponse.json({ok:true},{headers:noStore});
+  }
+  if(action==='scanWatchlist'){
+   const entries=await db.watchlistEntry.findMany({take:100});
+   let alertsCreated=0;
+   const now=new Date();
+   const windowStart=new Date(now.getTime()-5*60*1000);
+   for(const entry of entries){
+    const player=await db.user.findUnique({where:{id:entry.userId},select:{id:true,username:true,coins:true}});
+    if(!player)continue;
+    const [openings,rapidOpenings,rareDrops]=await Promise.all([
+     db.opening.count({where:{userId:entry.userId}}),
+     db.opening.count({where:{userId:entry.userId,boughtAt:{gte:windowStart}}}),
+     db.inventoryItem.count({where:{ownerId:entry.userId,createdAt:{gte:windowStart},item:{rarity:{in:['LEGENDARY','KNIFE']}}}})
+    ]);
+    const delta=entry.lastBalance===null?0:player.coins-entry.lastBalance;
+    const alerts:Array<{category:string;description:string;details:Record<string,unknown>}>=[];
+    if(delta>=100000)alerts.push({category:'COIN_SPIKE',description:player.username+' hat seit der letzten Prüfung '+(delta/100).toLocaleString('de-DE')+' virtuelle € dazugewonnen.',details:{previousCoins:entry.lastBalance,currentCoins:player.coins,deltaCents:delta}});
+    if(rapidOpenings>=25 && (entry.lastOpeningCount===null||openings>entry.lastOpeningCount))alerts.push({category:'RAPID_OPENINGS',description:player.username+' hat '+rapidOpenings+' Kisten in 5 Minuten geöffnet.',details:{rapidOpenings,windowMinutes:5}});
+    if(rareDrops>=5 && (entry.lastOpeningCount===null||openings>entry.lastOpeningCount))alerts.push({category:'RARE_DROP_CLUSTER',description:player.username+' erhielt '+rareDrops+' seltene Items in 5 Minuten.',details:{rareDrops,windowMinutes:5}});
+    await db.$transaction(async tx=>{
+     for(const alert of alerts){
+      await tx.watchAlert.create({data:{userId:entry.userId,...alert,details:JSON.stringify(alert.details)}});
+      await log(tx,actor,'WATCH_ALERT','USER',entry.userId,{category:alert.category,...alert.details});
+      alertsCreated++;
+     }
+     await tx.watchlistEntry.updateMany({where:{userId:entry.userId},data:{lastCheckedAt:now,lastBalance:player.coins,lastOpeningCount:openings}});
+    });
+   }
+   return NextResponse.json({ok:true,alertsCreated,checked:entries.length},{headers:noStore});
+  }
   if(action==='publishAnnouncement'){
    const message=typeof input.message==='string'?input.message.trim():'';
    const seconds=input.durationSeconds;
