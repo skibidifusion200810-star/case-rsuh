@@ -35,7 +35,8 @@ export async function GET(req:NextRequest){
   if(view==='watchlist'){
    const [entries,alerts,activity]=await Promise.all([
     db.watchlistEntry.findMany({orderBy:{createdAt:'desc'},take:100}),
-    db.watchAlert.findMany({orderBy:{createdAt:'desc'},take:100})
+    db.watchAlert.findMany({orderBy:{createdAt:'desc'},take:100}),
+    db.watchActivity.findMany({orderBy:{createdAt:'desc'},take:100})
    ]);
    const users=await db.user.findMany({where:{id:{in:entries.map(e=>e.userId)}},select:{id:true,username:true,coins:true,lastSeenAt:true}});
    const names=new Map(users.map(u=>[u.id,u]));
