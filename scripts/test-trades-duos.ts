@@ -37,15 +37,15 @@ async function main(){
  const create=(ownerId:string,itemId:string,value:number)=>
   db.inventoryItem.create({data:{ownerId,itemId,valueAtDrop:value}});
  const copies=await Promise.all([create(a.id,first.id,11),create(a.id,first.id,13)]);
- const stacked=await call(merge,'/api/merge',{inventoryIds:copies.map(x=>x.id)},a.cookie);
+ const stacked=await call(merge,'/api/merge',{action:'mergeAll'},a.cookie);
  assert.equal(stacked.status,200,'Two duplicate copies merge');
- assert.equal(stacked.data.merged.value,24);
- assert.equal(stacked.data.merged.mergedCount,2);
+ assert.equal(stacked.data.results[0].value,24);
+ assert.equal(stacked.data.results[0].mergedCount,2);
  const keeper=await db.inventoryItem.findUniqueOrThrow({where:{id:copies[0].id}});
  assert.equal(keeper.valueAtDrop,24);
  assert.equal(keeper.mergedCount,2);
  assert.ok((await db.inventoryItem.findUniqueOrThrow({where:{id:copies[1].id}})).soldAt);
- const mergeAgain=await call(merge,'/api/merge',{inventoryIds:copies.map(x=>x.id)},a.cookie);
+ const mergeAgain=await call(merge,'/api/merge',{action:'mergeAll'},a.cookie);
  assert.equal(mergeAgain.status,400,'Consumed copies may not be merged again');
  const extra=await create(a.id,second.id,225);
  const desired=await create(b.id,first.id,300);
@@ -148,9 +148,6 @@ async function main(){
   {action:'addBot',battleId:botBattleId,seat:'guestPartnerId'},a.cookie);
  assert.equal(botTwo.status,200,'Second bot fills the other opposing seat');
  assert.equal(botTwo.data.battle.finished,false,'Still waiting for the second real teammate');
- const tooMany=await call(duo,'/api/duo-battles',
-  {action:'addBot',battleId:botBattleId,seat:'creatorPartnerId'},a.cookie);
- assert.equal(tooMany.status,400,'No more than two bots per duo battle');
  const removed=await call(duo,'/api/duo-battles',
   {action:'removeBot',battleId:botBattleId,seat:'guestPartnerId'},a.cookie);
  assert.equal(removed.status,200,'Owner can remove a bot before the battle starts');
@@ -183,6 +180,18 @@ async function main(){
   balanceA-testCase.price*2,'Only human creator paid for the battle');
  assert.equal((await db.user.findUniqueOrThrow({where:{id:b.id}})).coins,
   balanceB-testCase.price*2,'Human teammate paid the same entry cost');
+ // A single real creator can now complete a duo match with three bots.
+ const triple=await call(duo,'/api/duo-battles',{action:'create',caseIds:[testCase.id]},a.cookie);
+ assert.equal(triple.status,200);
+ const tripleId=triple.data.battle.id as string;
+ for(const seat of ['guestId','guestPartnerId']){
+  const add=await call(duo,'/api/duo-battles',{action:'addBot',battleId:tripleId,seat},a.cookie);
+  assert.equal(add.status,200);
+  assert.equal(add.data.battle.finished,false);
+ }
+ const finalBot=await call(duo,'/api/duo-battles',{action:'addBot',battleId:tripleId,seat:'creatorPartnerId'},a.cookie);
+ assert.equal(finalBot.status,200,'Third bot is allowed and finishes the duo');
+ assert.equal(finalBot.data.battle.finished,true);
  const replayBots=await call(duo,'/api/duo-battles',
   {action:'addBot',battleId:botBattleId,seat:'creatorPartnerId'},a.cookie);
  assert.equal(replayBots.status,400,'Finished bot battle cannot be modified');
