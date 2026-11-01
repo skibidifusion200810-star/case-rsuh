@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
+import {maintenanceBlocked} from '@/lib/maintenance';
 import {socialViewer,qualifiesForGlobalDrop} from '@/lib/social';
 import {getLiveEvent,eventPrice,eventWeight,type LiveEvent} from '@/lib/events';
 import {xpForOpening} from '@/lib/levels';
@@ -110,6 +111,7 @@ async function settleIfFull(tx:Prisma.TransactionClient,battleId:string){
 export async function POST(req:NextRequest){
  const user=await socialViewer(req,db);
  if(!user)return fail('Bitte anmelden',401);
+ if(await maintenanceBlocked(user.id))return fail('Wartungsmodus aktiv',503);
  const origin=req.headers.get('origin'),host=req.headers.get('x-forwarded-host')??req.headers.get('host');
  if(origin&&host){
   try{if(new URL(origin).host!==host)return fail('Ungültiger Ursprung',403)}
