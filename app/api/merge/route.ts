@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {randomInt} from 'node:crypto';
 import {db} from '@/lib/db';
+import {maintenanceBlocked} from '@/lib/maintenance';
 import {socialViewer} from '@/lib/social';
 import {getLiveEvent} from '@/lib/events';
 import {recordWatchedActivity,inspectWatchedUser} from '@/lib/watchlist';
