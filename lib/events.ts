@@ -10,7 +10,9 @@ export async function getLiveEvent(
  db:Prisma.TransactionClient|PrismaClient,now=new Date()
 ):Promise<LiveEvent|null>{
  const event=await db.gameEvent.findUnique({where:{id:EVENT_ID}});
- return event&&event.startsAt<=now&&event.endsAt>now?event:null;
+ const scheduled=await db.adminScheduledEvent.findFirst({where:{startsAt:{lte:now},endsAt:{gt:now}},orderBy:{startsAt:'desc'}});
+ if(event&&event.startsAt<=now&&event.endsAt>now)return event;
+ return scheduled?{id:scheduled.id,discountPercent:scheduled.discountPercent,luckMultiplier:scheduled.luckMultiplier,startsAt:scheduled.startsAt,endsAt:scheduled.endsAt}:null;
 }
 /** Always preserve free cases and charge at least one cent for paid ones. */
 export function eventPrice(cents:number,event:LiveEvent|null){
