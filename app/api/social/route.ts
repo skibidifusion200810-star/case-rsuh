@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
+import {maintenanceBlocked} from '@/lib/maintenance';
 import {
  CHAT_COOLDOWN_MS,GIFT_COOLDOWN_MS,MAX_GIFT_CENTS,
  nextGiftAt,socialViewer,validateGiftCents
@@ -54,6 +55,7 @@ export async function POST(req:NextRequest){
  }
  const user=await socialViewer(req,db);
  if(!user)return fail('Bitte anmelden',401);
+ if(await maintenanceBlocked(user.id))return fail('Wartungsmodus aktiv',503);
  try{
   const b=await req.json() as Record<string,unknown>;
   if(!b||Array.isArray(b)||typeof b!=='object')return fail('Ungültige Anfrage');
