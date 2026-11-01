@@ -33,7 +33,7 @@ async function settleIfFull(tx:Prisma.TransactionClient,battleId:string){
  ];
  const humans=members.filter((x):x is string=>!!x);
  if(new Set(humans).size!==humans.length)throw Error('Doppelte Teilnehmer');
- if(battle.duoBotSeats.length>2)throw Error('Höchstens zwei Bots pro Battle');
+ if(battle.duoBotSeats.length>3)throw Error('Höchstens drei Bots pro Battle');
  const rounds=battle.rounds.slice().sort((a,b)=>a.position-b.position);
  const catalog=await tx.case.findMany({
   where:{id:{in:[...new Set(rounds.map(r=>r.caseId))]}},include:{items:true}
@@ -183,7 +183,7 @@ export async function POST(req:NextRequest){
     if(!b||!b.duo||b.status!=='WAITING')throw Error('Duo-Battle nicht mehr offen');
     if(b.creatorId!==user.id)throw Error('Nur der Ersteller kann Bots hinzufügen');
     if(occupied(b,selectedSeat))throw Error('Dieser Teamplatz ist besetzt');
-    if(b.duoBotSeats.length>=2)throw Error('Maximal zwei Bots pro Duo-Battle');
+    if(b.duoBotSeats.length>=3)throw Error('Maximal drei Bots pro Duo-Battle');
     const reserved=await tx.battle.updateMany({
      where:{id:battleId,status:'WAITING',duo:true,[selectedSeat]:null,
       NOT:{duoBotSeats:{has:selectedSeat}}},
@@ -245,7 +245,7 @@ export async function POST(req:NextRequest){
    'Teamplatz wurde bereits besetzt','Doppelte Teilnehmer','Kiste fehlt',
    'Battle wurde bereits beendet','Nur der Ersteller kann offene Duos abbrechen',
    'Battle wurde bereits gestartet','Nur der Ersteller kann Bots hinzufügen',
-   'Nur der Ersteller kann Bots entfernen','Maximal zwei Bots pro Duo-Battle',
+   'Nur der Ersteller kann Bots entfernen','Maximal drei Bots pro Duo-Battle',
    'Auf diesem Platz ist kein Bot','Duo-Battle wurde gleichzeitig geändert'];
   console.error('duo battle action:',error);
   return fail(error instanceof Error&&expected.includes(error.message)?
