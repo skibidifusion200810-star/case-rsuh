@@ -104,9 +104,11 @@ export async function POST(req:NextRequest){
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
     const event=await getLiveEvent(tx);
+    const jackpot=await tx.adminJackpot.findUnique({where:{id:c.id}});
+    const jackpotMultiplier=jackpot&&jackpot.endsAt>new Date()?jackpot.bonusMultiplier:100;
     const effectivePrice=eventPrice(c.price,event);
     const eligible=c.items.filter(i=>i.weight>0&&i.value>=1&&!!i.imageUrl)
-     .map(i=>({...i,weight:eventWeight(i,c.price,event)}));
+     .map(i=>({...i,weight:Math.max(1,Math.round(eventWeight(i,c.price,event)*(jackpotMultiplier>100&&['RARE','EPIC','LEGENDARY','KNIFE'].includes(i.rarity)?jackpotMultiplier/100:1)))}));
     if(!eligible.length)throw new Error('Keine überprüften Gewinne verfügbar');
     if(c.price===0){
      if(count>1)throw Error('Gratis-Kisten können nur einzeln geöffnet werden');
