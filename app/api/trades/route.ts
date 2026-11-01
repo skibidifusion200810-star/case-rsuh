@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
+import {maintenanceBlocked} from '@/lib/maintenance';
 import {socialViewer} from '@/lib/social';
 
 export const dynamic='force-dynamic';
@@ -30,6 +31,7 @@ async function presentOffers(userId:string){
 export async function GET(req:NextRequest){
  const user=await socialViewer(req,db);
  if(!user)return fail('Bitte anmelden',401);
+ if(await maintenanceBlocked(user.id))return fail('Wartungsmodus aktiv',503);
  try{
   const recipient=req.nextUrl.searchParams.get('recipient')?.trim();
   const own=await db.inventoryItem.findMany({
