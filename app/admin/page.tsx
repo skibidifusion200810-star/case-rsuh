@@ -4,13 +4,15 @@ import {useEffect,useState} from 'react';
 import './admin.css';
 import AdminEventControls from './EventControls';
 
-type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events'|'announcements';
+type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events'|'announcements'|'watchlist';
 type User={id:string;username:string;lastSeenAt:string|null;lastLoginAt:string|null;visitCount:number;coins:number;openSlots:number;isBanned:boolean;createdAt:string;_count:{inventory:number;openings:number}};
 type AdminCase={id:string;slug:string;name:string;price:number;items:Array<{id:string;name:string;rarity:string;value:number;weight:number;imageUrl:string|null}>};
 type Chat={id:string;body:string;createdAt:string;user:{id:string;username:string}};
 type Audit={id:string;createdAt:string;actorUsername:string;action:string;targetType:string;targetId:string;details:string};
 type Battle={id:string;status:string;createdAt:string;duo:boolean;againstBot:boolean;bots:number;totalCost:number;creator:string;guest:string|null;winner:string|null};
 type Announcement={id:string;message:string;createdAt:string;expiresAt:string};
+type WatchEntry={userId:string;reason:string;createdAt:string;lastCheckedAt:string|null;lastBalance:number|null;user:{id:string;username:string;coins:number;lastSeenAt:string|null}|null};
+type WatchAlert={id:string;userId:string;category:string;description:string;createdAt:string;resolvedAt:string|null;details:string};
 type Stats={users:number;cases:number;openings:number;battles:number;chat:number;totalCoins:number};
 const euros=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
 const number=(v:string)=>Number(v.trim().replace(/\./g,'').replace(',','.'));
@@ -25,7 +27,7 @@ function parseMoney(v:string):number|null{
 const sections:[Tab,string,string][]=[
  ['overview','ÜBERSICHT','▦'],['users','SPIELER','◈'],
  ['cases','KISTEN','⬡'],['events','EVENTS','✦'],['announcements','ANKÜNDIGUNGEN','◉'],['chat','CHAT','◉'],
- ['battles','BATTLES','⚔'],['audit','PROTOKOLL','▤']
+ ['battles','BATTLES','⚔'],['watchlist','WATCHLIST','◎'],['audit','PROTOKOLL','▤']
 ];
 export default function AdminPage(){
  const [tab,setTab]=useState<Tab>('overview');
@@ -39,6 +41,9 @@ export default function AdminPage(){
  const [notice,setNotice]=useState('');
  const [query,setQuery]=useState('');
  const [users,setUsers]=useState<User[]>([]);
+ const [watched,setWatched]=useState<WatchEntry[]>([]);
+ const [watchAlerts,setWatchAlerts]=useState<WatchAlert[]>([]);
+ const [watchReason,setWatchReason]=useState('Manuelle Beobachtung');
  const [announcements,setAnnouncements]=useState<Announcement[]>([]);
  const [activityUser,setActivityUser]=useState<User|null>(null);
  const [activityLogs,setActivityLogs]=useState<Array<{id:string;activity:string;createdAt:string}>>([]);
@@ -75,6 +80,7 @@ export default function AdminPage(){
    setAuthorized(true);setLoginRequired(false);setError('');
    if(view==='overview'){setStats(body.stats);setAudits(body.actions||[])}
    if(view==='users')setUsers(body.users||[]);
+   if(view==='watchlist'){setWatched(body.entries||[]);setWatchAlerts(body.alerts||[])}
    if(view==='announcements')setAnnouncements(body.announcements||[]);
    if(view==='chat')setChats(body.messages||[]);
    if(view==='cases'){
@@ -92,6 +98,7 @@ export default function AdminPage(){
   finally{setLoading(false)}
  }
  useEffect(()=>{void load(tab)},[tab]);
+ useEffect(()=>{if(tab!=='watchlist')return;const id=setInterval(()=>{void load('watchlist')},15000);return()=>clearInterval(id)},[tab]);
  useEffect(()=>{if(tab!=='users')return;const interval=setInterval(()=>{void load('users',query)},15000);return()=>clearInterval(interval)},[tab,query]);
  async function mutate(action:string,params:Record<string,unknown>,message:string,refresh:Tab=tab){
   setBusy(true);setError('');setNotice('');
@@ -163,7 +170,7 @@ export default function AdminPage(){
     </aside>
     <main className="admin-main">
      <div className="admin-page-intro"><div><div className="admin-kicker">CASE RUSH / ADMINISTRATION / {tab.toUpperCase()}</div>
-      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',announcements:'LIVE ANKÜNDIGUNGEN.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
+      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',watchlist:'SECURITY WATCHLIST.',announcements:'LIVE ANKÜNDIGUNGEN.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
       <p>Serverseitig geschützt · Alle Aktionen werden überprüft und sensible Änderungen protokolliert.</p>
      </div><button className="admin-refresh" onClick={()=>void load(tab)} disabled={busy||loading}>↻ AKTUALISIEREN</button></div>
      {notice&&<p className="admin-notice" role="status">{notice}</p>}
@@ -204,6 +211,7 @@ export default function AdminPage(){
         <td><span className={'admin-state '+(u.isBanned?'blocked':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'ok':'blocked')}>{u.isBanned?'GESPERRT':u.lastSeenAt&&Date.now()-new Date(u.lastSeenAt).getTime()<60000?'● ONLINE':'○ OFFLINE'}</span></td><td>{u.lastSeenAt?date(u.lastSeenAt):'Unbekannt'}</td><td>{u.lastLoginAt?date(u.lastLoginAt):'Unbekannt'}<small>{u.visitCount} Anmeldungen</small></td>
         <td><div className="admin-row-buttons">
          <button className="admin-small" onClick={()=>void showActivity(u)}>VERLAUF</button>
+         <button className="admin-small" disabled={busy} onClick={()=>void mutate('watchUser',{userId:u.id,reason:watchReason},u.username+' auf Watchlist gesetzt','users')}>◎ WATCH</button>
          <button className="admin-small-primary" onClick={()=>{setSelectedUser(u);setGrant('100,00')}}>€ GEBEN</button>
          <button className="admin-small" disabled={busy} onClick={()=>ban(u)}>{u.isBanned?'ENTSPERREN':'SPERREN'}</button>
         </div></td></tr>)}</tbody>
@@ -248,6 +256,19 @@ export default function AdminPage(){
         <td>{b.creator} vs {b.guest||'–'}</td><td>{euros(b.totalCost)}</td>
         <td><span className={'admin-state '+(b.status==='FINISHED'?'ok':'blocked')}>{b.status}</span></td>
         <td>{date(b.createdAt)}</td></tr>)}</tbody></table></div>
+     </section>}
+     {tab==='watchlist'&&<section className="admin-section">
+      <div className="admin-section-head"><h2>SPIELERÜBERWACHUNG</h2><span>MANUELLE PRÜFUNG · KEINE AUTOMATISCHEN SPERREN</span></div>
+      <p className="admin-help">Beobachte auffällige Spielaktivitäten. Prüfungen vergleichen Coin-Guthaben mit dem vorherigen Scan und zählen neue Kistenöffnungen und seltene Drops. Ein Alarm ist ein Hinweis und kein Beweis für einen Regelverstoß.</p>
+      <div className="admin-watch-toolbar"><label>GRUND FÜR NEUE WATCHLIST-EINTRÄGE<input maxLength={500} value={watchReason} onChange={e=>setWatchReason(e.target.value)}/></label>
+       <button className="admin-primary" disabled={busy||loading} onClick={()=>void (async()=>{setBusy(true);try{const r=await fetch('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'scanWatchlist'})});const j=await r.json();if(!r.ok)throw Error(j.error||'Scan fehlgeschlagen');setNotice(j.checked+' Spieler geprüft, '+j.alertsCreated+' neue Alarme');await load('watchlist')}catch(e){setError(e instanceof Error?e.message:'Scan fehlgeschlagen')}finally{setBusy(false)}})()}>WATCHLIST JETZT PRÜFEN</button>
+      </div>
+      <div className="admin-section-head"><h2>BEOBACHTETE SPIELER</h2><span>{watched.length} SPIELER</span></div>
+      {watched.map(w=><div className="admin-watch-row" key={w.userId}><div><strong>{w.user?.username||w.userId}</strong><small>{w.reason} · Letzte Prüfung: {w.lastCheckedAt?date(w.lastCheckedAt):'Noch nie'}</small><span>Guthaben: {euros(w.user?.coins||0)} · Stand letzte Prüfung: {w.lastBalance===null?'Unbekannt':euros(w.lastBalance)}</span></div><button className="admin-small-danger" disabled={busy} onClick={()=>void mutate('unwatchUser',{userId:w.userId},'Spieler von Watchlist entfernt','watchlist')}>ENTFERNEN</button></div>)}
+      {!watched.length&&<p className="admin-empty">Noch niemand auf der Watchlist. Im Bereich SPIELER auf ◎ WATCH klicken.</p>}
+      <div className="admin-section-head"><h2>AUFFÄLLIGE EREIGNISSE</h2><span>LETZTE {watchAlerts.length} ALARME</span></div>
+      {watchAlerts.map(a=><div className="admin-watch-row" key={a.id}><div><strong>{a.resolvedAt?'✓ GEPRÜFT':'⚠ OFFEN'} · {a.category}</strong><p>{a.description}</p><small>{date(a.createdAt)} · Spieler-ID {a.userId}</small></div>{!a.resolvedAt&&<button className="admin-small" disabled={busy} onClick={()=>void mutate('resolveWatchAlert',{alertId:a.id},'Alarm als geprüft markiert','watchlist')}>ALS GEPRÜFT MARKIEREN</button>}</div>)}
+      {!watchAlerts.length&&<p className="admin-empty">Noch keine Auffälligkeiten protokolliert.</p>}
      </section>}
      {tab==='audit'&&<section className="admin-section"><div className="admin-section-head"><h2>SICHERHEITSPROTOKOLL</h2><span>LETZTE 100 AKTIONEN</span></div>
       {audits.map(a=><div className="admin-audit" key={a.id}><div className="admin-audit-line"><strong>{a.action}</strong><span>{date(a.createdAt)}</span></div>
