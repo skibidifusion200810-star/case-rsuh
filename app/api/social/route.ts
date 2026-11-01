@@ -63,7 +63,9 @@ export async function POST(req:NextRequest){
    const body=typeof b.message==='string'?b.message.trim().replace(/[\x00-\x1f\x7f]/g,' '):'';
    if(!body||body.length>280)return fail('Bitte eine Nachricht mit 1–280 Zeichen eingeben');
    const message=await db.$transaction(async tx=>{
-    const cutoff=new Date(Date.now()-CHAT_COOLDOWN_MS);
+    const setting=await db.adminSetting.findUnique({where:{key:'CHAT_COOLDOWN_MS'}});
+    const cooldownMs=setting&&Number.isSafeInteger(Number(setting.value))&&Number(setting.value)>=0&&Number(setting.value)<=86400000?Number(setting.value):CHAT_COOLDOWN_MS;
+    const cutoff=new Date(Date.now()-cooldownMs);
     const updated=await tx.user.updateMany({
      where:{id:user.id,OR:[{chatLastSentAt:null},{chatLastSentAt:{lt:cutoff}}]},
      data:{chatLastSentAt:new Date()}
@@ -82,7 +84,9 @@ export async function POST(req:NextRequest){
    if(recipient.toLowerCase()===user.username.toLowerCase())return fail('Du kannst nicht an dich selbst senden');
    const receiver=await db.user.findUnique({where:{username:recipient},select:{id:true,username:true}});
    if(!receiver)return fail('Empfänger nicht gefunden',404);
-   const cooldown=nextGiftAt(user.giftLastSentAt);
+   const giftSetting=await db.adminSetting.findUnique({where:{key:'GIFT_COOLDOWN_MS'}});
+   const giftCooldown=giftSetting&&Number.isSafeInteger(Number(giftSetting.value))&&Number(giftSetting.value)>=0&&Number(giftSetting.value)<=604800000?Number(giftSetting.value):GIFT_COOLDOWN_MS;
+   const cooldown=user.giftLastSentAt?new Date(user.giftLastSentAt.getTime()+giftCooldown):null;
    if(cooldown&&cooldown.getTime()>Date.now())
     return fail('Du kannst nur einmal alle 24 Stunden Geld senden',429,cooldown.toISOString());
 
@@ -91,7 +95,7 @@ export async function POST(req:NextRequest){
    const transfer=await db.$transaction(async tx=>{
     const eligible=await tx.user.updateMany({
      where:{id:user.id,coins:{gte:amount as number},
-      OR:[{giftLastSentAt:null},{giftLastSentAt:{lte:new Date(Date.now()-GIFT_COOLDOWN_MS)}}]},
+      OR:[{giftLastSentAt:null},{giftLastSentAt:{lte:new Date(Date.now()-giftCooldown)}}]},
      data:{coins:{decrement:amount as number},giftLastSentAt:new Date()}
     });
     if(eligible.count!==1)throw Error('GIFT_UNAVAILABLE');
