@@ -14,7 +14,7 @@ export async function socialViewer(req:NextRequest,db:PrismaClient){
  if(!token)return null;
  const tokenHash=createHash('sha256').update(token).digest('hex');
  const session=await db.session.findUnique({where:{tokenHash},include:{user:true}});
- return session&&session.expiresAt>new Date()&&!session.user.isBanned?session.user:null;
+ return session&&session.expiresAt>new Date()&&!(session.user.isBanned&&(!session.user.bannedUntil||session.user.bannedUntil>new Date()))?session.user:null;
 }
 export function nextGiftAt(last:Date|null|undefined){
  return last?new Date(last.getTime()+GIFT_COOLDOWN_MS):null;
