@@ -10,6 +10,7 @@ import TradingHub from './TradingHub';
 import PlayerIdentity,{XPProgress} from './PlayerIdentity';
 type Item={id:string,name:string,rarity:string,value:number,weight:number,imageUrl?:string|null,priceOrigin?:string,priceCheckedAt?:string|null,priceSourceUrl?:string|null};
 type Case={id:string,name:string,slug:string,price:number,originalPrice?:number,imageUrl?:string|null,items:Item[]};
+type CatalogItem={id:string;name:string;rarity:string;value:number;imageUrl:string|null;case:{name:string}};
 type Inv={id:string,item:Item,valueAtDrop?:number|null,isDemo?:boolean,tradeLockId?:string|null,mergedCount:number,mergedRarity?:string|null};
 type User={id:string,username:string,coins:number,openSlots:number,starterClaimed:boolean,isAdmin?:boolean,xp:number,level:number};
 const rarityColor:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9c63ff',EPIC:'#ec55cf',LEGENDARY:'#f25057',KNIFE:'#f8bc45'};
@@ -46,6 +47,14 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
  const [caseCount,setCaseCount]=useState(1);
  const [mergeBusy,setMergeBusy]=useState(false);
  const [mergeNotice,setMergeNotice]=useState('');
+ const [adminWeaponOpen,setAdminWeaponOpen]=useState(false);
+ const [weaponSearch,setWeaponSearch]=useState('');
+ const [weaponCatalog,setWeaponCatalog]=useState<CatalogItem[]>([]);
+ const [weaponSelected,setWeaponSelected]=useState<CatalogItem|null>(null);
+ const [weaponCount,setWeaponCount]=useState(1);
+ const [weaponBusy,setWeaponBusy]=useState(false);
+ const [weaponError,setWeaponError]=useState('');
+ const [weaponNotice,setWeaponNotice]=useState('');
  const [spin,setSpin]=useState<{item:Item,inventoryId:string,isDemo:boolean,pool:Item[]}|null>(null);
  const [reducedMotion,setReducedMotion]=useState(false);
  const [formMode,setFormMode]=useState<'login'|'register'>('login'),[formError,setFormError]=useState('');
@@ -97,6 +106,32 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
    else if(reducedMotion)setWin(j);
    else setSpin({...j,pool:c.items});
   }
+ }
+ useEffect(()=>{
+  if(!adminWeaponOpen||!me?.isAdmin)return;
+  let active=true;
+  const timer=setTimeout(async()=>{
+   try{
+    const r=await fetch('/api/admin?view=weaponCatalog&q='+encodeURIComponent(weaponSearch),{cache:'no-store'});
+    const j=await r.json();
+    if(!r.ok)throw Error(j.error||'Waffenkatalog konnte nicht geladen werden');
+    if(active)setWeaponCatalog(j.items||[]);
+   }catch(e){if(active)setWeaponError(e instanceof Error?e.message:'Laden fehlgeschlagen')}
+  },250);
+  return()=>{active=false;clearTimeout(timer)};
+ },[adminWeaponOpen,weaponSearch,me?.isAdmin]);
+ async function addAdminWeapon(){
+  if(!me?.isAdmin||!weaponSelected||weaponBusy)return;
+  setWeaponBusy(true);setWeaponError('');
+  try{
+   const r=await fetch('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'grantInventoryItem',itemId:weaponSelected.id,count:weaponCount,userId:me.id})});
+   const j=await r.json();
+   if(!r.ok)throw Error(j.error||'Waffe konnte nicht hinzugefügt werden');
+   setWeaponNotice(weaponCount+'× '+weaponSelected.name+' zum Inventar hinzugefügt.');
+   setAdminWeaponOpen(false);setWeaponSelected(null);
+   await refresh();
+  }catch(e){setWeaponError(e instanceof Error?e.message:'Fehler')}
+  finally{setWeaponBusy(false)}
  }
  async function mergeAllDuplicates(){
   if(mergeBusy||busy)return;
@@ -170,7 +205,7 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
  </section><main className="game-main">{error&&<div className="error">{error}</div>}{tab==='cases'?<><div className="eyebrow">01 / THE ARSENAL</div><div className="section-head"><h2>CHOOSE YOUR <em>CASE.</em></h2><span>{cases.length.toString().padStart(2,'0')} KISTEN</span></div><div className="case-grid">{cases.map(c=><button className="case" key={c.id} onClick={()=>{setCaseCount(1);setDetail(c)}}><div className="case-visual"><AssetImage src={c.imageUrl} alt={c.name+" Kistenbild"} kind="case"/><span>CR / {c.slug.toUpperCase()}</span></div><h3>{c.name}</h3><p>{c.price===0?'KOSTENLOS':<>
         {c.originalPrice!==undefined&&c.originalPrice>c.price&&<del className="event-old-price">{fmt(c.originalPrice)}</del>}
         {fmt(c.price)} VIRTUELL
-       </>}</p><span className="case-bottom">ÖFFNEN →</span></button>)}</div></>:tab==='inventory'?<><h2>DEIN <em>INVENTAR</em></h2><div className="trading-inventory-cta"><div><strong>ALLE DUPLIKATE MERGEN</strong><p>Alle identischen und nicht reservierten Waffen zusammenführen. Jede Gruppe hat eine 10%-Chance auf +1 Seltenheitsstufe; ein Luck-Event erhöht diese Chance (maximal 50%). Der virtuelle Gesamtwert bleibt erhalten.</p></div><button className="primary" disabled={busy||mergeBusy||!me||![...inventory.reduce((m,row)=>{if(!row.tradeLockId&&!row.isDemo)m.set(row.item.id,(m.get(row.item.id)||0)+1);return m},new Map<string,number>()).values()].some(n=>n>=2)} onClick={()=>void mergeAllDuplicates()}>{mergeBusy?'MERGE LÄUFT …':'✦ ALLE DUPLIKATE MERGEN'}</button><Link href="/trading" className="secondary">TRADING ↗</Link></div>{mergeNotice&&<p className="admin-notice" role="status">{mergeNotice}</p>}{!me?<p>Bitte anmelden.</p>:<div className="item-grid">{inventory.map(i=><article key={i.id} className="item" style={{borderTopColor:rarityColor[i.mergedRarity??i.item.rarity]}}><small>{i.mergedRarity??i.item.rarity}{i.mergedRarity&&i.mergedRarity!==i.item.rarity?' · UPGRADED':''}</small><AssetImage src={i.item.imageUrl} alt={i.item.name} kind="item"/><h3>{i.item.name}</h3><p>{fmt(i.valueAtDrop??i.item.value)} <small>virtuell · Wert bei Ziehung</small></p>{(i.mergedCount??1)>1&&<p className='merged-tag'>MERGED ×{i.mergedCount}</p>}{i.tradeLockId&&<p className='locked-tag'>IN TRADE RESERVIERT</p>}<button className="primary" disabled={busy||!!i.tradeLockId} onClick={()=>void sell(i.id)}>VERKAUFEN</button></article>)}</div>}</>:tab==='leaderboard'?<Leaderboard/>:tab==='upgrades'?<UpgradePanel slots={me?.openSlots??1} coins={me?.coins??0} purchase={async tier=>!!(await act('upgrade',{tier}) )}/>:tab==='trading'?<TradingHub/>:<BattleArena cases={cases} me={me} onChange={refresh}/>}</main><footer>CASE RUSH · Guthaben und Itemwerte in virtuellen € ohne Geldwert · Keine Auszahlungen · Bilder/Itemdaten: ByMykel CSGO-API, CS2-Assets © jeweilige Rechteinhaber · Unabhängiges Fanprojekt.</footer>{detail&&<div className="overlay" onClick={()=>setDetail(null)}><section className="modal detail" onClick={e=>e.stopPropagation()}><button className="x" onClick={()=>setDetail(null)}>✕</button><div className="eyebrow">OPEN CASE</div><h2>{detail.name.toUpperCase()}</h2><p>{detail.price===0?'Kostenlos & unbegrenzt – nach 3 Sekunden erneut öffnen. Gratis-Gewinne sind verkaufbar.':<>
+       </>}</p><span className="case-bottom">ÖFFNEN →</span></button>)}</div></>:tab==='inventory'?<><h2>DEIN <em>INVENTAR</em></h2><div className="trading-inventory-cta"><div><strong>ALLE DUPLIKATE MERGEN</strong><p>Alle identischen und nicht reservierten Waffen zusammenführen. Jede Gruppe hat eine 10%-Chance auf +1 Seltenheitsstufe; ein Luck-Event erhöht diese Chance (maximal 50%). Der virtuelle Gesamtwert bleibt erhalten.</p></div><button className="primary" disabled={busy||mergeBusy||!me||![...inventory.reduce((m,row)=>{if(!row.tradeLockId&&!row.isDemo)m.set(row.item.id,(m.get(row.item.id)||0)+1);return m},new Map<string,number>()).values()].some(n=>n>=2)} onClick={()=>void mergeAllDuplicates()}>{mergeBusy?'MERGE LÄUFT …':'✦ ALLE DUPLIKATE MERGEN'}</button><Link href="/trading" className="secondary">TRADING ↗</Link></div>{mergeNotice&&<p className="admin-notice" role="status">{mergeNotice}</p>}{weaponNotice&&<p className="admin-notice" role="status">{weaponNotice}</p>}{me?.isAdmin&&<button className="primary" type="button" onClick={()=>{setWeaponError('');setAdminWeaponOpen(true)}}>+ WAFFE HINZUFÜGEN · ADMIN</button>}{!me?<p>Bitte anmelden.</p>:<div className="item-grid">{inventory.map(i=><article key={i.id} className="item" style={{borderTopColor:rarityColor[i.mergedRarity??i.item.rarity]}}><small>{i.mergedRarity??i.item.rarity}{i.mergedRarity&&i.mergedRarity!==i.item.rarity?' · UPGRADED':''}</small><AssetImage src={i.item.imageUrl} alt={i.item.name} kind="item"/><h3>{i.item.name}</h3><p>{fmt(i.valueAtDrop??i.item.value)} <small>virtuell · Wert bei Ziehung</small></p>{(i.mergedCount??1)>1&&<p className='merged-tag'>MERGED ×{i.mergedCount}</p>}{i.tradeLockId&&<p className='locked-tag'>IN TRADE RESERVIERT</p>}<button className="primary" disabled={busy||!!i.tradeLockId} onClick={()=>void sell(i.id)}>VERKAUFEN</button></article>)}</div>}</>:tab==='leaderboard'?<Leaderboard/>:tab==='upgrades'?<UpgradePanel slots={me?.openSlots??1} coins={me?.coins??0} purchase={async tier=>!!(await act('upgrade',{tier}) )}/>:tab==='trading'?<TradingHub/>:<BattleArena cases={cases} me={me} onChange={refresh}/>}</main><footer>CASE RUSH · Guthaben und Itemwerte in virtuellen € ohne Geldwert · Keine Auszahlungen · Bilder/Itemdaten: ByMykel CSGO-API, CS2-Assets © jeweilige Rechteinhaber · Unabhängiges Fanprojekt.</footer>{detail&&<div className="overlay" onClick={()=>setDetail(null)}><section className="modal detail" onClick={e=>e.stopPropagation()}><button className="x" onClick={()=>setDetail(null)}>✕</button><div className="eyebrow">OPEN CASE</div><h2>{detail.name.toUpperCase()}</h2><p>{detail.price===0?'Kostenlos & unbegrenzt – nach 3 Sekunden erneut öffnen. Gratis-Gewinne sind verkaufbar.':<>
        {detail.originalPrice!==undefined&&detail.originalPrice>detail.price&&<del className="event-old-price">{fmt(detail.originalPrice)}</del>}
        {fmt(detail.price)} (virtuell) pro Öffnung
       </>}</p><h3>MÖGLICHE ITEMS / DROP-CHANCEN</h3><p className="drop-explainer">Die Prozentwerte sind deine echten Gewinnchancen pro Öffnung. Die Preise sind virtuelle Verkaufswerte, keine auszahlbaren Marktpreise.</p>
@@ -207,7 +242,24 @@ export default function GameApp({section}:{section:'cases'|'battles'|'inventory'
    {lastOpening&&<button className="primary wide reopen" disabled={!canReopen} onClick={()=>void reopen()}>{reopenLabel}</button>}
    <button className="secondary wide" onClick={()=>{setMultiWins([]);setMultiSaleValue(null)}}>SCHLIESSEN / ITEMS BEHALTEN</button>
   </section>
- </div>}{win&&<div className="overlay"><section className="modal win"><div className="eyebrow">NEW DROP</div><div className="win-star" style={{color:rarityColor[win.item.rarity]}}><AssetImage src={win.item.imageUrl} alt={win.item.name} kind="item"/></div><small>{win.item.rarity}</small><h2>{win.item.name}</h2><p>{fmt(win.item.value)} virtuell · {priceNote(win.item)}</p><button className="primary wide" disabled={busy} onClick={()=>void sell(win.inventoryId)}>SOFORT VERKAUFEN</button>{lastOpening&&<button className="primary wide reopen" disabled={!canReopen} onClick={()=>void reopen()}>{reopenLabel}</button>}<button className="wide secondary" onClick={()=>setWin(null)}>INS INVENTAR LEGEN</button></section></div>}{login&&<div className="overlay" onClick={()=>setLogin(false)}>
+ </div>}{win&&<div className="overlay"><section className="modal win"><div className="eyebrow">NEW DROP</div><div className="win-star" style={{color:rarityColor[win.item.rarity]}}><AssetImage src={win.item.imageUrl} alt={win.item.name} kind="item"/></div><small>{win.item.rarity}</small><h2>{win.item.name}</h2><p>{fmt(win.item.value)} virtuell · {priceNote(win.item)}</p><button className="primary wide" disabled={busy} onClick={()=>void sell(win.inventoryId)}>SOFORT VERKAUFEN</button>{lastOpening&&<button className="primary wide reopen" disabled={!canReopen} onClick={()=>void reopen()}>{reopenLabel}</button>}<button className="wide secondary" onClick={()=>setWin(null)}>INS INVENTAR LEGEN</button></section></div>}{adminWeaponOpen&&me?.isAdmin&&<div className="overlay cr-admin-weapon-layer" onMouseDown={e=>{if(e.target===e.currentTarget)setAdminWeaponOpen(false)}}>
+  <section className="modal cr-admin-weapon-modal" role="dialog" aria-modal="true" aria-label="Waffen zum Inventar hinzufügen">
+   <button className="x" type="button" onClick={()=>setAdminWeaponOpen(false)}>✕</button>
+   <div className="eyebrow">ADMIN / INVENTAR</div><h2>WAFFE <em>HINZUFÜGEN.</em></h2>
+   <p>Wähle eine Waffe aus dem vorhandenen Spielkatalog. Die Zuteilung wird protokolliert.</p>
+   <input aria-label="Waffe suchen" placeholder="Waffe oder Skin suchen…" value={weaponSearch} onChange={e=>setWeaponSearch(e.target.value)} />
+   <div className="cr-admin-weapon-grid">{weaponCatalog.map(w=><button key={w.id} type="button" className={'cr-admin-weapon-card'+(weaponSelected?.id===w.id?' selected':'')} onClick={()=>setWeaponSelected(w)}>
+    {w.imageUrl?<img src={w.imageUrl} alt={w.name} loading="lazy" referrerPolicy="no-referrer"/>:<span>✦</span>}
+    <strong>{w.name}</strong><small>{w.rarity} · {fmt(w.value)} virtuell</small>
+   </button>)}</div>
+   {weaponSelected&&<div className="cr-admin-weapon-selection">
+    <div><strong>{weaponSelected.name}</strong><small>{weaponSelected.rarity} · {fmt(weaponSelected.value)} virtuell</small></div>
+    <label>ANZAHL <input type="number" min={1} max={10} step={1} value={weaponCount} onChange={e=>setWeaponCount(Number(e.target.value))}/></label>
+   </div>}
+   {weaponError&&<p className="error" role="alert">{weaponError}</p>}
+   <button className="primary wide" disabled={weaponBusy||!weaponSelected||!Number.isInteger(weaponCount)||weaponCount<1||weaponCount>10} onClick={()=>void addAdminWeapon()}>{weaponBusy?'WIRD HINZUGEFÜGT …':'AUSGEWÄHLTE WAFFE HINZUFÜGEN'}</button>
+  </section>
+ </div>}{login&&<div className="overlay" onClick={()=>setLogin(false)}>
  <form className="modal auth" onClick={e=>e.stopPropagation()} onSubmit={async e=>{e.preventDefault();const j=await act(formMode,{username,password});if(j){setLogin(false);setPassword('')}}}>
  <button type="button" className="x" onClick={()=>setLogin(false)}>✕</button>
  <div className="eyebrow">DEIN ACCOUNT</div><h2>{formMode==='register'?'KONTO ERSTELLEN':'EINLOGGEN'}</h2>
