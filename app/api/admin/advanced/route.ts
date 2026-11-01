@@ -38,7 +38,7 @@ export async function GET(req:NextRequest){
     db.battle.count({where:{createdAt:{gte:since}}}),
     db.user.aggregate({_sum:{coins:true}}),
     db.inventoryItem.findMany({where:{soldAt:null},select:{valueAtDrop:true,item:{select:{value:true}}},take:5000}),
-    db.rareDropEvent.findMany({take:40,orderBy:{createdAt:'desc'}}),
+    db.opening.findMany({take:60,orderBy:{boughtAt:'desc'},include:{user:{select:{username:true}},item:{select:{name:true,value:true,rarity:true,imageUrl:true}}}}),
     db.adminGiftBatch.findMany({take:15,orderBy:{createdAt:'desc'}}),
     db.adminTradeFlag.findMany({take:30,orderBy:{createdAt:'desc'}}),
     db.adminPromo.findMany({take:60,orderBy:{createdAt:'desc'}}),
@@ -47,7 +47,7 @@ export async function GET(req:NextRequest){
     db.adminMaintenance.findUnique({where:{id:'GLOBAL'}}),
     db.adminJackpot.findMany()
    ]);
-   return answer({stats:{users,online,signups,openings,battles,coins:coins._sum.coins||0,inventoryValue:items.reduce((n,i)=>n+(i.valueAtDrop??i.item.value),0),inventoryRowsSampled:items.length},drops,gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots});
+   return answer({stats:{users,online,signups,openings,battles,coins:coins._sum.coins||0,inventoryValue:items.reduce((n,i)=>n+(i.valueAtDrop??i.item.value),0),inventoryRowsSampled:items.length},drops:drops.map(d=>({id:d.id,username:d.user.username,itemName:d.item.name,value:d.item.value,rarity:d.item.rarity,imageUrl:d.item.imageUrl,createdAt:d.boughtAt})),gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots});
   }
   if(view==='trades'){
    const offers=await db.tradeOffer.findMany({orderBy:{createdAt:'desc'},take:80,include:{sender:{select:{username:true}},recipient:{select:{username:true}}}});
