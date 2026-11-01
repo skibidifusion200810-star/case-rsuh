@@ -31,7 +31,7 @@ export async function GET(req:NextRequest){
   }
   if(view==='summary'){
    const since=new Date(Date.now()-24*60*60*1000);
-   const [users,online,signups,openings,battles,coins,items,drops,gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots]=await Promise.all([
+   const [users,online,signups,openings,battles,coins,items,drops,gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots,openingTimeline,battleTimeline]=await Promise.all([
     db.user.count(),db.user.count({where:{lastSeenAt:{gt:new Date(Date.now()-60000)}}}),
     db.user.count({where:{createdAt:{gte:since}}}),
     db.opening.count({where:{boughtAt:{gte:since}}}),
@@ -45,11 +45,14 @@ export async function GET(req:NextRequest){
     db.adminScheduledEvent.findMany({take:40,orderBy:{startsAt:'desc'}}),
     db.adminSetting.findMany(),
     db.adminMaintenance.findUnique({where:{id:'GLOBAL'}}),
-    db.adminJackpot.findMany()
+    db.adminJackpot.findMany(),
+    db.opening.findMany({where:{boughtAt:{gte:since}},select:{boughtAt:true},take:20000}),
+    db.battle.findMany({where:{createdAt:{gte:since}},select:{createdAt:true},take:20000})
    ]);
+   const hourly=Array.from({length:24},(_,index)=>{const start=Date.now()-(23-index)*3600000;return {hour:new Date(start).toLocaleTimeString('de-DE',{hour:'2-digit'}),openings:openingTimeline.filter(x=>x.boughtAt.getTime()>=start&&x.boughtAt.getTime()<start+3600000).length,battles:battleTimeline.filter(x=>x.createdAt.getTime()>=start&&x.createdAt.getTime()<start+3600000).length}});
    const dropItems=await db.item.findMany({where:{id:{in:[...new Set(drops.map(d=>d.itemId))]}},select:{id:true,name:true,value:true,rarity:true,imageUrl:true}});
    const dropItemMap=new Map(dropItems.map(i=>[i.id,i]));
-   return answer({stats:{users,online,signups,openings,battles,coins:coins._sum.coins||0,inventoryValue:items.reduce((n,i)=>n+(i.valueAtDrop??i.item.value),0),inventoryRowsSampled:items.length},drops:drops.map(d=>({id:d.id,username:d.user.username,itemName:dropItemMap.get(d.itemId)?.name||'Skin',value:dropItemMap.get(d.itemId)?.value||0,rarity:dropItemMap.get(d.itemId)?.rarity||'COMMON',imageUrl:dropItemMap.get(d.itemId)?.imageUrl||null,createdAt:d.boughtAt})),gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots});
+   return answer({hourly,stats:{users,online,signups,openings,battles,coins:coins._sum.coins||0,inventoryValue:items.reduce((n,i)=>n+(i.valueAtDrop??i.item.value),0),inventoryRowsSampled:items.length},drops:drops.map(d=>({id:d.id,username:d.user.username,itemName:dropItemMap.get(d.itemId)?.name||'Skin',value:dropItemMap.get(d.itemId)?.value||0,rarity:dropItemMap.get(d.itemId)?.rarity||'COMMON',imageUrl:dropItemMap.get(d.itemId)?.imageUrl||null,createdAt:d.boughtAt})),gifts,tradeFlags,codes,scheduled,settings,maintenance,jackpots});
   }
   if(view==='trades'){
    const offers=await db.tradeOffer.findMany({orderBy:{createdAt:'desc'},take:80,include:{sender:{select:{username:true}},recipient:{select:{username:true}}}});
