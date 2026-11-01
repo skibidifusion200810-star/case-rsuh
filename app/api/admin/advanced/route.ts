@@ -100,6 +100,18 @@ export async function POST(req:NextRequest){
    await log(action,target,{amount:data.amount,hours:data.hours,reason:note,inventoryId:data.inventoryId});
    return answer({ok:true});
   }
+  if(action==='grantSkin'){
+   const id=String(data.itemId||'');
+   const item=await db.item.findUnique({where:{id},select:{id:true,value:true}});
+   const recipient=await db.user.findUnique({where:{id:target},select:{id:true}});
+   if(!item||!recipient)return fail('Spieler oder Skin nicht gefunden',404);
+   const amount=int(data.count,1,10)?data.count as number:1;
+   await db.$transaction(async tx=>{
+    await tx.inventoryItem.createMany({data:Array.from({length:amount},()=>({ownerId:target,itemId:item.id,valueAtDrop:item.value}))});
+    await tx.adminAuditLog.create({data:{actorId:actor.id,actorUsername:actor.username,action:'GRANT_SKIN',targetType:'USER',targetId:target,details:JSON.stringify({itemId:id,count:amount})}});
+   });
+   return answer({ok:true});
+  }
   if(action==='globalGiveaway'){
    if(!int(data.amount,1,1000000))return fail('1 bis 1000000 Cent');
    const players=await db.user.findMany({where:{isBanned:false,lastSeenAt:{gte:new Date(Date.now()-30*60000)}},select:{id:true,coins:true}});
