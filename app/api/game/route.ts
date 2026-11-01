@@ -7,6 +7,7 @@ import {qualifiesForGlobalDrop} from '@/lib/social';
 import {levelProgress,xpForOpening} from '@/lib/levels';
 import {inspectWatchedUser,recordWatchedActivity} from '@/lib/watchlist';
 import {getLiveEvent,eventPrice,eventWeight,eventPublic} from '@/lib/events';
+import {maintenanceBlocked} from '@/lib/maintenance';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 async function user(req:NextRequest){
@@ -59,11 +60,13 @@ export async function POST(req:NextRequest){
    if(!/^[a-zA-Z0-9_]{3,24}$/.test(username)||password.length<10||password.length>128)return fail('Benutzername 3–24 Zeichen; Passwort mindestens 10 Zeichen');
    let u;
    if(action==='register'){
+    if(await maintenanceBlocked(null))return fail('Wartungsmodus aktiv',503);
     const existing=await db.user.findUnique({where:{username}});if(existing)return fail('Benutzername schon vergeben',409);
     u=await db.user.create({data:{username,passwordHash:await argon2.hash(password),coins:await (async()=>{const setting=await db.adminSetting.findUnique({where:{key:'START_COINS'}});const n=Number(setting?.value);return setting&&Number.isSafeInteger(n)&&n>=0&&n<=100000000?n:100000})(),visitCount:1,lastLoginAt:new Date(),lastSeenAt:new Date()}});
    }else{
     const found=await db.user.findUnique({where:{username}});
     if(!found||!(await argon2.verify(found.passwordHash,password)))return fail('Falsche Zugangsdaten',401);
+    if(await maintenanceBlocked(found.id))return fail('Wartungsmodus aktiv',503);
     if(found.isBanned&&(!found.bannedUntil||found.bannedUntil>new Date()))return fail('Dieses Konto wurde gesperrt',403);
     u=await db.user.update({where:{id:found.id},data:{visitCount:{increment:1},lastLoginAt:new Date(),lastSeenAt:new Date()}});
    }
@@ -80,6 +83,7 @@ export async function POST(req:NextRequest){
    const res=NextResponse.json({ok:true});res.cookies.delete(cookie);return res;
   }
   const u=await user(req);if(!u)return fail('Bitte anmelden',401);
+  if(await maintenanceBlocked(u.id))return fail('Wartungsmodus aktiv',503);
   if(action==='upgrade'){
    const tier=typeof b.tier==='number'?b.tier:0;
    const cost=priceForUpgrade(tier);
