@@ -166,6 +166,25 @@ export async function POST(req:NextRequest){
    const created=await db.case.create({data:{name,slug,price:data.price as number,imageUrl:String(data.imageUrl||'').slice(0,500)||null,items:{create:source.map(x=>({name:x.name,rarity:x.rarity,value:x.value,weight:x.weight,imageUrl:x.imageUrl,priceOrigin:x.priceOrigin,marketHashName:x.marketHashName,priceCheckedAt:x.priceCheckedAt,priceSourceUrl:x.priceSourceUrl}))}}});
    await log(action,created.id,{name,slug});return answer({ok:true});
   }
+  if(action==='cancelBattle'){
+   const id=String(data.battleId||'');
+   const result=await db.$transaction(async tx=>{
+    const battle=await tx.battle.findUnique({where:{id},include:{rounds:true}});
+    if(!battle||battle.status!=='WAITING')throw Error('Nur offene Battles dürfen erstattet werden');
+    const changed=await tx.battle.updateMany({where:{id,status:'WAITING'},data:{status:'CANCELED',finishedAt:new Date()}});
+    if(changed.count!==1)throw Error('Battle bereits bearbeitet');
+    const members=[battle.creatorId,battle.creatorPartnerId,battle.guestId,battle.guestPartnerId].filter((x):x is string=>!!x);
+    const refund=battle.totalCost||battle.rounds.reduce((n,x)=>n+x.casePrice,0);
+    for(const userId of members){
+     const wallet=await tx.user.findUniqueOrThrow({where:{id:userId},select:{coins:true}});
+     if(wallet.coins>2147483647-refund)throw Error('Guthabenlimit verhindert Erstattung');
+     await tx.user.update({where:{id:userId},data:{coins:{increment:refund}}});
+    }
+    await tx.adminAuditLog.create({data:{actorId:actor.id,actorUsername:actor.username,action:'ADMIN_CANCEL_BATTLE',targetType:'BATTLE',targetId:id,details:JSON.stringify({members,refund})}});
+    return {refunded:members.length,refund};
+   },{isolationLevel:'Serializable'});
+   return answer({ok:true,...result});
+  }
   if(action==='flagTrade'){
    const id=String(data.offerId||'');
    if(!(await db.tradeOffer.findUnique({where:{id}})))return fail('Trade fehlt');
