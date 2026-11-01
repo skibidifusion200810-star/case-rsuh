@@ -163,3 +163,11 @@
 .admin-announcement-row>div{display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
 .admin-announcement-row small{color:#96a5b5}
 @media(max-width:720px){.admin-announcement-form{grid-template-columns:1fr}}
+
+.adv-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.adv-tabs button{border:1px solid #48505d;background:#202934;color:#ccd5e2;padding:10px 15px;font-size:11px;font-weight:850}
+.adv-tabs button.active{background:#ffbc62;color:#181a21}
+.adv-controls .adv-field{display:flex;flex-direction:column;gap:7px;margin:14px 0;color:#bac4d1;font-size:11px;font-weight:850;max-width:600px}
+.adv-controls .adv-field input{background:#181f27;border:1px solid #4b5665;color:white;padding:13px}
+.adv-controls .admin-primary{margin:6px 8px 6px 0}
+.adv-line{padding:12px;border-bottom:1px solid #384253;color:#d5deea;font-size:12px}
