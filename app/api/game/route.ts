@@ -99,7 +99,10 @@ export async function POST(req:NextRequest){
    const caseId=typeof b.caseId==='string'?b.caseId:'';
    if(!caseId)return fail('Ungültige Kiste');
    const count=typeof b.count==='number'?b.count:1;
-   if(!Number.isInteger(count)||count<1||count>10||count>u.openSlots)return fail('Dieses Mehrfachöffnungs-Upgrade fehlt');
+   const maxOpeningSetting=await db.adminSetting.findUnique({where:{key:'MAX_OPENINGS'}});
+   const maxOpeningValue=Number(maxOpeningSetting?.value);
+   const maxOpening=Number.isSafeInteger(maxOpeningValue)&&maxOpeningValue>=1&&maxOpeningValue<=10?maxOpeningValue:10;
+   if(!Number.isInteger(count)||count<1||count>maxOpening||count>u.openSlots)return fail('Dieses Mehrfachöffnungs-Upgrade fehlt oder das globale Limit ist erreicht');
    const opened=await db.$transaction(async tx=>{
     const c=await tx.case.findUnique({where:{id:caseId},include:{items:true}});
     if(!c||!c.items.length)throw new Error('Kiste nicht gefunden');
