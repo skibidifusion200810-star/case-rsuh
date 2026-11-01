@@ -261,3 +261,21 @@ model WatchAlert {
  @@index([userId,createdAt])
  @@index([resolvedAt,createdAt])
 }
+
+model WatchActivity {
+ id String @id @default(uuid())
+ userId String
+ kind String @db.VarChar(48)
+ details String @default("{}")
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
+
+model PlayerWarning {
+ id String @id @default(uuid())
+ userId String
+ reason String @db.VarChar(500)
+ createdBy String
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
