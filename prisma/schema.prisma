@@ -12,6 +12,7 @@ model User {
   coins Int @default(100000)
   xp Int @default(0)
   isBanned Boolean @default(false)
+  bannedUntil DateTime?
   openSlots Int @default(1)
   starterClaimed Boolean @default(false)
   freeLastOpenedAt DateTime?
@@ -279,4 +280,62 @@ model PlayerWarning {
  createdBy String
  createdAt DateTime @default(now())
  @@index([userId,createdAt])
+}
+
+model AdminSetting {
+ key String @id
+ value String
+ updatedAt DateTime @updatedAt
+}
+model AdminPromo {
+ id String @id @default(uuid())
+ code String @unique
+ coinAmount Int @default(0)
+ itemId String?
+ maxUses Int @default(100)
+ uses Int @default(0)
+ expiresAt DateTime?
+ createdAt DateTime @default(now())
+}
+model AdminPromoRedemption {
+ id String @id @default(uuid())
+ promoId String
+ userId String
+ createdAt DateTime @default(now())
+ @@unique([promoId,userId])
+}
+model AdminScheduledEvent {
+ id String @id @default(uuid())
+ title String
+ startsAt DateTime
+ endsAt DateTime
+ discountPercent Int @default(0)
+ luckMultiplier Int @default(100)
+ createdBy String
+ @@index([startsAt,endsAt])
+}
+model AdminMaintenance {
+ id String @id
+ enabled Boolean @default(false)
+ message String @default("Wartung")
+}
+model AdminGiftBatch {
+ id String @id @default(uuid())
+ creatorId String
+ amount Int
+ createdAt DateTime @default(now())
+ recipientCount Int
+}
+model AdminTradeFlag {
+ id String @id @default(uuid())
+ offerId String
+ reason String
+ status String @default("OPEN")
+ createdAt DateTime @default(now())
+}
+model AdminJackpot {
+ id String @id
+ caseId String
+ bonusMultiplier Int @default(100)
+ endsAt DateTime
 }
