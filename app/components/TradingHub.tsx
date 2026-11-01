@@ -1,18 +1,16 @@
 'use client';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useState} from 'react';
 
 type Card={id:string;itemId:string;name:string;rarity:string;imageUrl:string|null;value:number;mergedCount:number};
 type Offer={id:string;sender:string;recipient:string;direction:'sent'|'received';status:string;offered:Card[];requested:Card[];createdAt:string};
 type Data={mine:Card[];recipient:string|null;target:Card[];offers:Offer[]};
 const eur=(v:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(v/100);
 export default function TradingHub(){
- const [tab,setTab]=useState<'trade'|'merge'>('trade');
  const [data,setData]=useState<Data|null>(null);
  const [name,setName]=useState('');
  const [searched,setSearched]=useState('');
  const [offered,setOffered]=useState<string[]>([]);
  const [requested,setRequested]=useState<string[]>([]);
- const [merged,setMerged]=useState<string[]>([]);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
@@ -31,17 +29,6 @@ export default function TradingHub(){
   const timer=window.setInterval(()=>{void refresh()},12000);
   return()=>window.clearInterval(timer);
  },[searched]);
- const groups=useMemo(()=>{
-  const map=new Map<string,Card[]>();
-  for(const card of data?.mine??[]){
-   const a=map.get(card.itemId)??[];
-   a.push(card);
-   map.set(card.itemId,a);
-  }
-  return [...map.values()].filter(list=>list.length>=2);
- },[data?.mine]);
- const selected=merged.map(id=>data?.mine.find(c=>c.id===id)).filter((c):c is Card=>!!c);
- const mergeTotal=selected.reduce((n,c)=>n+c.value,0);
  function toggle(ids:string[],setter:(v:string[])=>void,id:string,max=5){
   if(ids.includes(id))setter(ids.filter(s=>s!==id));
   else if(ids.length<max)setter([...ids,id]);
@@ -53,7 +40,7 @@ export default function TradingHub(){
    const result=await response.json();
    if(!response.ok)throw Error(result.error||'Aktion fehlgeschlagen');
    setNotice(success);
-   setOffered([]);setRequested([]);setMerged([]);
+   setOffered([]);setRequested([]);
    setRefreshTick(x=>x+1);
    window.dispatchEvent(new Event('cr-balance-changed'));
   }catch(e){setError(e instanceof Error?e.message:'Fehler')}
@@ -70,15 +57,11 @@ export default function TradingHub(){
  return <section className="trading-hub">
   <div className="eyebrow">PLAYER ECONOMY / TRADING</div>
   <h2>SKIN <em>TRADING.</em></h2>
-  <p className="trading-lead">Tausche Skins sicher mit anderen Spielern oder fasse identische Waffen zusammen. Alle Werte sind virtuelle Spielwerte.</p>
-  <div className="trading-tabs">
-   <button className={tab==='trade'?'active':''} onClick={()=>setTab('trade')}>↔ SPIELER-TRADE</button>
-   <button className={tab==='merge'?'active':''} onClick={()=>setTab('merge')}>✧ DUPLIKATE MERGEN</button>
-  </div>
+  <p className="trading-lead">Tausche Skins sicher mit anderen Spielern. Duplikate kannst du direkt im Inventar mergen. Alle Werte sind virtuelle Spielwerte.</p>
   {error&&<p className="trading-error" role="alert">{error}</p>}
   {notice&&<p className="trading-notice" role="status">{notice}</p>}
   {!data?<div className="trading-empty">Bitte anmelden, um Skins zu tauschen und zu mergen.</div>:
-   tab==='trade'?<>
+   <>
     <div className="trading-recipient">
      <div><label htmlFor="trade-person">MIT WEM WILLST DU TRADEN?</label><p>Gib den exakten Nutzernamen ein, um dessen handelbare Skins zu sehen.</p></div>
      <form onSubmit={e=>{e.preventDefault();setSearched(name.trim());setOffered([]);setRequested([]);setRefreshTick(n=>n+1)}}>
@@ -125,25 +108,7 @@ export default function TradingHub(){
        </div>}
       </article>)}
     </div>
-   </>:<>
-    <div className="trading-merge-info"><div className="eyebrow">DUPLICATE MERGE</div><h3>GLEICHE WAFFEN. <em>EIN ITEM.</em></h3>
-     <p>Wähle mindestens zwei identische Skins mit demselben Zustand. Das Ergebnis fasst sie zu einer Waffe zusammen: <strong>Der Gesamtwert bleibt exakt gleich.</strong> Es gibt keine zusätzlichen Coins und keine neue Zufallsziehung. Die übrigen Exemplare werden verbraucht.</p>
-     <div className="trading-merge-price">{selected.length} AUSGEWÄHLT <strong>{eur(mergeTotal)}</strong> GESAMTWERT</div>
-     <button className="primary" disabled={busy||selected.length<2||selected.some(c=>c.itemId!==selected[0]?.itemId)}
-      onClick={()=>void submit('/api/merge',{inventoryIds:merged},'Duplikate zusammengeführt. Der Gesamtwert wurde erhalten.')}>
-      {busy?'WIRD GEMERGT…':'AUSGEWÄHLTE WAFFEN MERGEN ↗'}</button>
-    </div>
-    {groups.length===0?<div className="trading-empty">Du hast momentan keine identischen, ungesperrten Waffen zum Zusammenführen.</div>:
-     groups.map((group,index)=><div className="trading-merge-group" key={group[0].itemId}>
-      <div className="trading-section-title"><h3>{group[0].name}</h3><span>{group.length} EXEMPLARE</span></div>
-      <div className="trading-item-grid">
-       {group.map(card=>pick(card,merged,(ids)=>{
-        if(ids.length&&ids.some(id=>data.mine.find(i=>i.id===id)?.itemId!==card.itemId)){
-         setMerged(ids.filter(id=>data.mine.find(i=>i.id===id)?.itemId===card.itemId));
-        }else setMerged(ids);
-       },10))}
-      </div>
-     </div>)}
    </>}
+
  </section>;
 }
