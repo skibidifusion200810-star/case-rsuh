@@ -1,6 +1,13 @@
 import {db} from '@/lib/db';
 
 /** Best-effort fraud heuristics; never block legitimate game activity. */
+export async function recordWatchedActivity(userId:string,kind:string,details:Record<string,unknown>={}){
+ try{
+  const entry=await db.watchlistEntry.findUnique({where:{userId},select:{userId:true}});
+  if(!entry)return;
+  await db.watchActivity.create({data:{userId,kind:kind.slice(0,48),details:JSON.stringify(details)}});
+ }catch(error){console.error('Watch activity:',error)}
+}
 export async function inspectWatchedUser(userId:string){
  try {
   const entry=await db.watchlistEntry.findUnique({where:{userId}});
