@@ -171,3 +171,5 @@
 .adv-controls .adv-field input{background:#181f27;border:1px solid #4b5665;color:white;padding:13px}
 .adv-controls .admin-primary{margin:6px 8px 6px 0}
 .adv-line{padding:12px;border-bottom:1px solid #384253;color:#d5deea;font-size:12px}
+
+.adv-chart{height:150px;display:flex;gap:6px;align-items:flex-end;padding:10px 5px 25px;border-bottom:1px solid #374457;overflow:hidden}.adv-chart-column{min-width:0;flex:1;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}.adv-chart-column span{display:block;width:100%;max-width:18px;background:linear-gradient(#ffcc7c,#996326);border-radius:3px 3px 0 0}.adv-chart-column em{font:9px Arial;color:#99a7bb}
