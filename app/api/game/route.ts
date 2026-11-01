@@ -5,7 +5,7 @@ import argon2 from 'argon2';
 import {priceForUpgrade} from '@/lib/upgrades';
 import {qualifiesForGlobalDrop} from '@/lib/social';
 import {levelProgress,xpForOpening} from '@/lib/levels';
-import {inspectWatchedUser} from '@/lib/watchlist';
+import {inspectWatchedUser,recordWatchedActivity} from '@/lib/watchlist';
 import {getLiveEvent,eventPrice,eventWeight,eventPublic} from '@/lib/events';
 const cookie='cr_session';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
@@ -144,6 +144,7 @@ export async function POST(req:NextRequest){
     }
     return results;
    },{isolationLevel:'Serializable'});
+   await recordWatchedActivity(u.id,'CASE_OPEN',{caseId,count,items:opened.map(x=>({name:x.item.name,value:x.item.value,rarity:x.item.rarity}))});
    await inspectWatchedUser(u.id);
    const coins=(await db.user.findUniqueOrThrow({where:{id:u.id}})).coins;
    return NextResponse.json(count===1?{...opened[0],coins}:{results:opened,coins});
@@ -171,6 +172,7 @@ export async function POST(req:NextRequest){
     const player=await tx.user.update({where:{id:u.id},data:{coins:{increment:payout}}});
     return {soldIds:inventoryIds,coins:player.coins,value:payout,count:marked.count};
    },{isolationLevel:'Serializable'});
+   await recordWatchedActivity(u.id,'SELL_BATCH',{value: settled.value,count:settled.count});
    await inspectWatchedUser(u.id);
    return NextResponse.json(settled);
   }
@@ -186,6 +188,7 @@ export async function POST(req:NextRequest){
     const updated=await tx.user.update({where:{id:u.id},data:{coins:{increment:paidValue}}});
     return {coins:updated.coins,value:paidValue};
    },{isolationLevel:'Serializable'});
+   await recordWatchedActivity(u.id,'SELL_ITEM',{value:result.value});
    await inspectWatchedUser(u.id);
    return NextResponse.json(result);
   }
