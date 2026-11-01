@@ -608,3 +608,20 @@ header.top.game-header .profile{
  header.top.game-header nav{gap:17px!important}
  header.top.game-header nav .game-nav-link{font-size:10px!important}
 }
+
+/* Admin inventory weapon gallery */
+.cr-admin-weapon-layer{z-index:105;overflow-y:auto}
+.cr-admin-weapon-modal{width:min(1050px,96vw);max-height:90vh;display:flex;flex-direction:column;gap:12px;overflow:hidden;background:#181d25}
+.cr-admin-weapon-modal h2{font-size:clamp(24px,4vw,40px);margin:8px 0}
+.cr-admin-weapon-modal>input{margin:2px 0 10px;flex:none}
+.cr-admin-weapon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;min-height:80px;overflow:auto;padding:4px;flex:1}
+.cr-admin-weapon-card{min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:#212934;color:#fff;border:1px solid #3d4b5d;border-radius:8px;text-align:center}
+.cr-admin-weapon-card.selected,.cr-admin-weapon-card:hover{border-color:#ffbd55;background:#30313a}
+.cr-admin-weapon-card img{width:100%;height:105px;object-fit:contain}
+.cr-admin-weapon-card strong{font-size:12px;line-height:1.35}
+.cr-admin-weapon-card small{font-size:10px;color:#c7a676}
+.cr-admin-weapon-selection{display:flex;justify-content:space-between;align-items:center;gap:18px;background:#262d37;padding:14px;border:1px solid #4b596b}
+.cr-admin-weapon-selection>div{display:flex;flex-direction:column;gap:5px}
+.cr-admin-weapon-selection label{max-width:115px;font-size:11px}
+.cr-admin-weapon-selection input{width:90px!important;padding:8px;margin:6px 0 0}
+@media(max-width:600px){.cr-admin-weapon-modal{padding:16px}.cr-admin-weapon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
