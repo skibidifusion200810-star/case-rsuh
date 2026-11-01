@@ -41,6 +41,7 @@ export default function AdvancedControls(){
   {view==='control'&&<>{btn('WARTUNG AKTIVIEREN','maintenance',{enabled:true})}{btn('WARTUNG DEAKTIVIEREN','maintenance',{enabled:false})}
    {input('amount','EINSTELLUNGSWERT','number')}
    {['START_COINS','CHAT_COOLDOWN_MS','GIFT_COOLDOWN_MS','MAX_OPENINGS'].map(k=>btn(k+' SETZEN','setting',{key:k,amount:n('amount')}))}
+   {input('battleId','OFFENE BATTLE-ID')}{btn('BATTLE ABBRECHEN + ERSTATTEN','cancelBattle',{battleId:field('battleId')})}
    {input('offerId','TRADE-ID')}{input('reason','GRUND')}{btn('TRADE MARKIEREN','flagTrade',{offerId:field('offerId'),reason:field('reason')})}
   </>}
  </section>;
