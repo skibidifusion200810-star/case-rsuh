@@ -64,6 +64,7 @@ export default function AdminPage(){
  const [username,setUsername]=useState('');
 
  async function load(view:Tab=tab,search=query){
+  if(view==='advanced'){setLoading(false);setError('');return}
   setLoading(true);
   try{
    const parameters=new URLSearchParams({view});
@@ -98,7 +99,7 @@ export default function AdminPage(){
   }catch(e){setError(e instanceof Error?e.message:'Fehler beim Laden')}
   finally{setLoading(false)}
  }
- useEffect(()=>{void load(tab)},[tab]);
+ useEffect(()=>{if(tab==='advanced'){setLoading(false);setError('');return}void load(tab)},[tab]);
  useEffect(()=>{if(tab!=='watchlist')return;const id=setInterval(()=>{void load('watchlist')},15000);return()=>clearInterval(id)},[tab]);
  useEffect(()=>{if(tab!=='users')return;const interval=setInterval(()=>{void load('users',query)},15000);return()=>clearInterval(interval)},[tab,query]);
  async function mutate(action:string,params:Record<string,unknown>,message:string,refresh:Tab=tab){
