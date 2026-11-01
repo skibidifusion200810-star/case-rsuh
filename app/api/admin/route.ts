@@ -45,7 +45,7 @@ export async function GET(req:NextRequest){
    const q=(req.nextUrl.searchParams.get('q')||'').trim().slice(0,80);
    const items=await db.item.findMany({
     where:{imageUrl:{not:null},value:{gt:0},...(q?{name:{contains:q,mode:'insensitive' as const}}:{})},
-    distinct:['name'],orderBy:[{name:'asc'},{value:'desc'}],take:250,
+    distinct:['name'],orderBy:[{name:'asc'},{value:'desc'}],take:1000,
     select:{id:true,name:true,rarity:true,value:true,imageUrl:true,case:{select:{name:true}}}
    });
    return NextResponse.json({items},{headers:noStore});
