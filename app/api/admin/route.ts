@@ -41,6 +41,15 @@ export async function GET(req:NextRequest){
    const names=new Map(users.map(u=>[u.id,u]));
    return NextResponse.json({entries:entries.map(e=>({...e,user:names.get(e.userId)||null})),alerts,activity},{headers:noStore});
   }
+  if(view==='weaponCatalog'){
+   const q=(req.nextUrl.searchParams.get('q')||'').trim().slice(0,80);
+   const items=await db.item.findMany({
+    where:{imageUrl:{not:null},value:{gt:0},...(q?{name:{contains:q,mode:'insensitive' as const}}:{})},
+    distinct:['name'],orderBy:[{name:'asc'},{value:'desc'}],take:250,
+    select:{id:true,name:true,rarity:true,value:true,imageUrl:true,case:{select:{name:true}}}
+   });
+   return NextResponse.json({items},{headers:noStore});
+  }
   if(view==='status')return NextResponse.json({admin:true,username:gate.user.username},{headers:noStore});
   if(view==='events'){
    const [event,recent]=await Promise.all([
@@ -133,6 +142,25 @@ export async function POST(req:NextRequest){
   const input=await req.json() as Record<string,unknown>;
   if(!input||Array.isArray(input)||typeof input!=='object')return fail('Ungültige Anfrage');
   const action=typeof input.action==='string'?input.action:'';
+  if(action==='grantInventoryItem'){
+   const itemId=typeof input.itemId==='string'?input.itemId:'';
+   const recipientId=typeof input.userId==='string'?input.userId:actor.id;
+   const amount=input.count;
+   if(typeof amount!=='number'||!Number.isInteger(amount)||amount<1||amount>10)return fail('Zwischen 1 und 10 Exemplare wählen');
+   const result=await db.$transaction(async tx=>{
+    const [item,recipient]=await Promise.all([
+     tx.item.findUnique({where:{id:itemId},select:{id:true,name:true,value:true,rarity:true,imageUrl:true}}),
+     tx.user.findUnique({where:{id:recipientId},select:{id:true,username:true}})
+    ]);
+    if(!item||!item.imageUrl||item.value<1)return null;
+    if(!recipient)throw Error('Spieler nicht gefunden');
+    await tx.inventoryItem.createMany({data:Array.from({length:amount},()=>({ownerId:recipient.id,itemId:item.id,valueAtDrop:item.value,isDemo:false}))});
+    await log(tx,actor,'GRANT_INVENTORY_ITEM','USER',recipient.id,{itemId:item.id,itemName:item.name,count:amount,rarity:item.rarity,valueAtDrop:item.value,username:recipient.username});
+    return {name:item.name,recipient:recipient.username,count:amount};
+   },{isolationLevel:'Serializable'});
+   if(!result)return fail('Waffe nicht gefunden',404);
+   return NextResponse.json({ok:true,result},{headers:noStore});
+  }
   if(action==='watchUser'){
    const userId=typeof input.userId==='string'?input.userId:'';
    const reason=typeof input.reason==='string'?input.reason.trim().slice(0,500):'Manuelle Überprüfung';
