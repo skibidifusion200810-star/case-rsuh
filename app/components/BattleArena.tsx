@@ -148,7 +148,7 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
     <div className="battle-rule"><b>01</b><span>Wähle bis zu zehn Kisten in beliebiger Reihenfolge. Du kannst 1-€- und 2.000-€-Kisten kombinieren.</span></div>
     <div className="battle-rule"><b>02</b><span>Der Gesamtpreis ist der Einsatz je Teilnehmer. Beide öffnen dieselben Kisten mit denselben Wahrscheinlichkeiten.</span></div>
     <div className="battle-rule"><b>03</b><span>Jede Runde zeigt zwei rotierende Waffenstreifen. Die serverseitigen Gewinne stehen vorher fest.</span></div>
-    <div className="battle-rule"><b>04</b><span>Im Duo-Modus treten zwei Teams mit je zwei Spielern gegeneinander an. Jeder zahlt den Gesamtpreis; beide Spieler des Gewinnerteams erhalten je zwei Items pro Runde. Offene Battles sind erstattungsfähig.</span></div>
+    <div className="battle-rule"><b>04</b><span>Im Duo-Modus treten zwei Teams mit je zwei Teilnehmern gegeneinander an. Du kannst bis zu drei Bots hinzufügen. Jeder zahlt den Gesamtpreis; beide Spieler des Gewinnerteams erhalten je zwei Items pro Runde. Offene Battles sind erstattungsfähig.</span></div>
    </div>
   </div>
   <div className="battle-list-head"><div className="eyebrow">ACTIVE ARENA</div>
@@ -189,10 +189,10 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
     </div>}
     {current.status==='WAITING'?<>
      <p>{current.duo?
-      'Das Battle startet automatisch, sobald alle vier Plätze besetzt sind. Du kannst echte Spieler und bis zu zwei Bots kombinieren. Bots zahlen keine virtuellen Einsätze.':
+      'Das Battle startet automatisch, sobald alle vier Plätze besetzt sind. Du kannst echte Spieler und bis zu drei Bots kombinieren. Bots zahlen keine virtuellen Einsätze.':
       'Sobald ein Gegner beitritt, starten die Animationen automatisch.'} Die Lobby wird alle drei Sekunden aktualisiert.</p>
      {current.duo&&<div className="duo-seat-controls">
-      <div className="eyebrow">TEAMPLÄTZE · {current.duoBotSeats.length}/2 BOTS</div>
+      <div className="eyebrow">TEAMPLÄTZE · {current.duoBotSeats.length}/3 BOTS</div>
       {([{seat:'creatorPartnerId',name:'TEAM A · SPIELER 2',username:current.creatorPartner},
          {seat:'guestId',name:'TEAM B · SPIELER 1',username:current.guest},
          {seat:'guestPartnerId',name:'TEAM B · SPIELER 2',username:current.guestPartner}] as const)
@@ -207,7 +207,7 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
             <button className="primary" disabled={loading||me.coins<current.totalCost}
              onClick={()=>void action('join',{battleId:current.id,seat:x.seat,isDuo:true})}>BEITRETEN</button>}
            {free&&current.viewerRole==='creator'&&
-            <button className="duo-add-bot" disabled={loading||current.duoBotSeats.length>=2}
+            <button className="duo-add-bot" disabled={loading||current.duoBotSeats.length>=3}
              onClick={()=>void action('addBot',{battleId:current.id,seat:x.seat,isDuo:true})}>
              + BOT HINZUFÜGEN</button>}
            {bot&&current.viewerRole==='creator'&&
@@ -217,7 +217,7 @@ export default function BattleArena({cases,me,onChange}:{cases:CSCase[],me:Playe
           </div>
          </div>;
         })}
-      <p className="duo-seat-hint">Beispiel: Zwei echte Spieler in Team A und zwei Bots in Team B. Die Bots haben dieselben Drop-Chancen wie die Spieler.</p>
+      <p className="duo-seat-hint">Beispiel: Du und ein Bot in Team A gegen zwei Bots in Team B – insgesamt drei Bots. Die Bots haben dieselben Drop-Chancen wie die Spieler.</p>
      </div>}
      {current.duo&&current.viewerRole==='creator'&&<button className="secondary wide"
       disabled={loading} onClick={()=>void action('cancel',{battleId:current.id,isDuo:true})}>BATTLE ABBRECHEN · ALLE ERSTATTEN</button>}
