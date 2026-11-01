@@ -109,6 +109,7 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
  const user=await viewer(req);
  if(!user)return fail('Bitte anmelden',401);
+ if(await maintenanceBlocked(user.id))return fail('Wartungsmodus aktiv',503);
  try{
   const body=await req.json() as Record<string,unknown>;
   if(body.action==='create'){
