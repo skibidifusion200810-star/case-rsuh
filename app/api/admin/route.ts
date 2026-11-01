@@ -33,13 +33,13 @@ export async function GET(req:NextRequest){
   });
   const view=req.nextUrl.searchParams.get('view')||'overview';
   if(view==='watchlist'){
-   const [entries,alerts]=await Promise.all([
+   const [entries,alerts,activity]=await Promise.all([
     db.watchlistEntry.findMany({orderBy:{createdAt:'desc'},take:100}),
     db.watchAlert.findMany({orderBy:{createdAt:'desc'},take:100})
    ]);
    const users=await db.user.findMany({where:{id:{in:entries.map(e=>e.userId)}},select:{id:true,username:true,coins:true,lastSeenAt:true}});
    const names=new Map(users.map(u=>[u.id,u]));
-   return NextResponse.json({entries:entries.map(e=>({...e,user:names.get(e.userId)||null})),alerts},{headers:noStore});
+   return NextResponse.json({entries:entries.map(e=>({...e,user:names.get(e.userId)||null})),alerts,activity},{headers:noStore});
   }
   if(view==='status')return NextResponse.json({admin:true,username:gate.user.username},{headers:noStore});
   if(view==='events'){
