@@ -14,6 +14,10 @@ export async function GET(req:NextRequest){
  const actor=await authorize(req);if(!actor)return fail('Adminzugriff erforderlich',403);
  const view=req.nextUrl.searchParams.get('view')||'summary';
  try{
+  if(view==='users'){
+   const q=(req.nextUrl.searchParams.get('q')||'').trim().slice(0,50);
+   return answer({users:await db.user.findMany({where:q?{username:{contains:q,mode:'insensitive'}}:{},take:70,orderBy:{createdAt:'desc'},select:{id:true,username:true,coins:true,xp:true,isBanned:true}})});
+  }
   if(view==='catalog')return answer({items:await db.item.findMany({where:{imageUrl:{not:null}},select:{id:true,name:true,rarity:true,value:true,imageUrl:true,caseId:true},take:1000})});
   if(view==='players'){
    const id=req.nextUrl.searchParams.get('userId')||'';
