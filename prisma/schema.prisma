@@ -72,6 +72,7 @@ model InventoryItem {
   isDemo Boolean @default(false)
   battleId String?
   mergedCount Int @default(1)
+  mergedRarity String?
   tradeLockId String?
   createdAt DateTime @default(now())
   @@index([ownerId, soldAt, isDemo])
