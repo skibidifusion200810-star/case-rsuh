@@ -3,8 +3,9 @@ import Link from 'next/link';
 import {useEffect,useState} from 'react';
 import './admin.css';
 import AdminEventControls from './EventControls';
+import AdvancedControls from './AdvancedControls';
 
-type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events'|'announcements'|'watchlist';
+type Tab='overview'|'users'|'cases'|'chat'|'battles'|'audit'|'events'|'announcements'|'watchlist'|'advanced';
 type User={id:string;username:string;lastSeenAt:string|null;lastLoginAt:string|null;visitCount:number;coins:number;openSlots:number;isBanned:boolean;createdAt:string;_count:{inventory:number;openings:number}};
 type AdminCase={id:string;slug:string;name:string;price:number;items:Array<{id:string;name:string;rarity:string;value:number;weight:number;imageUrl:string|null}>};
 type Chat={id:string;body:string;createdAt:string;user:{id:string;username:string}};
@@ -27,7 +28,7 @@ function parseMoney(v:string):number|null{
 const sections:[Tab,string,string][]=[
  ['overview','ÜBERSICHT','▦'],['users','SPIELER','◈'],
  ['cases','KISTEN','⬡'],['events','EVENTS','✦'],['announcements','ANKÜNDIGUNGEN','◉'],['chat','CHAT','◉'],
- ['battles','BATTLES','⚔'],['watchlist','WATCHLIST','◎'],['audit','PROTOKOLL','▤']
+ ['battles','BATTLES','⚔'],['advanced','ADVANCED','⚙'],['watchlist','WATCHLIST','◎'],['audit','PROTOKOLL','▤']
 ];
 export default function AdminPage(){
  const [tab,setTab]=useState<Tab>('overview');
@@ -170,7 +171,7 @@ export default function AdminPage(){
     </aside>
     <main className="admin-main">
      <div className="admin-page-intro"><div><div className="admin-kicker">CASE RUSH / ADMINISTRATION / {tab.toUpperCase()}</div>
-      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',watchlist:'SECURITY WATCHLIST.',announcements:'LIVE ANKÜNDIGUNGEN.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
+      <h1>{({overview:'COMMAND CENTER.',users:'SPIELER VERWALTEN.',cases:'CASE CONTROL.',events:'LIVE EVENT CONTROL.',watchlist:'SECURITY WATCHLIST.',advanced:'ADVANCED CONTROL.',announcements:'LIVE ANKÜNDIGUNGEN.',chat:'CHAT MODERATION.',battles:'BATTLE MONITOR.',audit:'ÄNDERUNGSPROTOKOLL.'} as Record<Tab,string>)[tab]}</h1>
       <p>Serverseitig geschützt · Alle Aktionen werden überprüft und sensible Änderungen protokolliert.</p>
      </div><button className="admin-refresh" onClick={()=>void load(tab)} disabled={busy||loading}>↻ AKTUALISIEREN</button></div>
      {notice&&<p className="admin-notice" role="status">{notice}</p>}
@@ -270,6 +271,7 @@ export default function AdminPage(){
       {watchAlerts.map(a=><div className="admin-watch-row" key={a.id}><div><strong>{a.resolvedAt?'✓ GEPRÜFT':'⚠ OFFEN'} · {a.category}</strong><p>{a.description}</p><small>{date(a.createdAt)} · Spieler-ID {a.userId}</small></div>{!a.resolvedAt&&<button className="admin-small" disabled={busy} onClick={()=>void mutate('resolveWatchAlert',{alertId:a.id},'Alarm als geprüft markiert','watchlist')}>ALS GEPRÜFT MARKIEREN</button>}</div>)}
       {!watchAlerts.length&&<p className="admin-empty">Noch keine Auffälligkeiten protokolliert.</p>}
      </section>}
+     {tab==='advanced'&&<AdvancedControls/>}
      {tab==='audit'&&<section className="admin-section"><div className="admin-section-head"><h2>SICHERHEITSPROTOKOLL</h2><span>LETZTE 100 AKTIONEN</span></div>
       {audits.map(a=><div className="admin-audit" key={a.id}><div className="admin-audit-line"><strong>{a.action}</strong><span>{date(a.createdAt)}</span></div>
        <small>{a.actorUsername} · {a.targetType} · {a.targetId}</small>
