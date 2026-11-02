@@ -743,3 +743,51 @@ header.top.game-header nav .game-nav-link.active{color:#f2b46c!important}
 .cr-language-switch button:hover:not(.active){color:#fff;background:#263544}
 .cr-language-switch span{color:#6c8192;font-size:10px}
 @media(max-width:600px){.cr-language-switch{right:8px;bottom:8px;padding:3px}.cr-language-switch button{padding:7px 9px}}
+
+
+/* CS2-inspired case opening: consistent single/multi/battle reels, only cosmetic. */
+.cr2-reel-overlay{z-index:135!important;background:rgba(5,9,13,.94)!important;backdrop-filter:blur(15px)}
+.cr2-reel-modal{width:min(1140px,98vw)!important;background:linear-gradient(180deg,#273742,#131d27 78%)!important;border:1px solid #60707c!important;border-top:3px solid #e1b06e!important;box-shadow:0 35px 130px #000e!important;border-radius:2px!important;overflow:hidden}
+.cr2-reel-modal>.eyebrow{font-size:11px;color:#d5a262;letter-spacing:2.3px}
+.cr2-reel-modal h2{color:#f4f5f7!important;font-weight:1000;letter-spacing:-1.5px;margin:13px 0 10px}
+.cr2-reel-modal h2 em{color:#e9b266}
+.cr2-reel-modal>p{color:#b1c0cc;font-size:13px}
+.cr-spin-window{--cr-tile:152px;--cr-gap:12px;height:251px;overflow:hidden;position:relative;isolation:isolate;background:radial-gradient(ellipse at 50% 65%,#3a505c,#1b2934 57%,#121d26 100%);border-top:1px solid #536675;border-bottom:1px solid #536675;box-shadow:inset 0 24px 25px #0003,inset 0 -22px 24px #0005}
+.cr-spin-window:before,.cr-spin-window:after{content:'';position:absolute;top:0;bottom:0;width:min(18%,120px);z-index:3;pointer-events:none}
+.cr-spin-window:before{left:0;background:linear-gradient(90deg,#101b25,transparent)}
+.cr-spin-window:after{right:0;background:linear-gradient(-90deg,#101b25,transparent)}
+.cr-spin-top-label{position:absolute;top:9px;left:18px;color:#8298aa;font-size:9px;font-weight:900;letter-spacing:1.6px;z-index:4;pointer-events:none}
+.cr-spin-pointer{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:2px;z-index:6;pointer-events:none;background:linear-gradient(180deg,#ffcd78 0%,#ffe1a4 40%,#ffd48a 60%,#f5b257 100%);box-shadow:0 0 12px #f6b662b8,0 0 32px #d1955480}
+.cr-spin-pointer:before,.cr-spin-pointer:after{content:'';position:absolute;left:-7px;border-left:8px solid transparent;border-right:8px solid transparent}
+.cr-spin-pointer:before{top:0;border-top:12px solid #ffd993;filter:drop-shadow(0 1px 4px #000)}
+.cr-spin-pointer:after{bottom:0;border-bottom:12px solid #ffd993;filter:drop-shadow(0 -1px 4px #000)}
+.cr-spin-track{height:100%;width:max-content;display:flex;align-items:center;gap:var(--cr-gap);will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.cr-spin-card{width:var(--cr-tile);flex:0 0 var(--cr-tile);height:199px;display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-start;position:relative;overflow:hidden;background:linear-gradient(152deg,#3b4c58,#263541 67%,#202e39);border:1px solid #5b6b79;border-bottom:5px solid #9ca3af;padding:10px 8px 8px;box-shadow:inset 0 1px #ffffff14,0 10px 18px #0005}
+.cr-spin-card:before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#ffffff13,transparent 70%);pointer-events:none}
+.cr-spin-item-art{display:grid;place-items:center;height:116px;width:100%;flex:0 0 116px;position:relative}
+.cr-spin-card img{height:108px;width:139px;object-fit:contain;filter:drop-shadow(0 9px 8px #000a);user-select:none;pointer-events:none}
+.cr-spin-item-art>span{font-size:45px;color:#ebb364}
+.cr-spin-card strong{font-weight:850;font-size:10px;line-height:1.25;max-height:25px;min-height:25px;color:#eff2f7;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;position:relative}
+.cr-spin-card small{font-size:11px;font-weight:950;color:#ffc979;white-space:nowrap;margin-top:auto;position:relative}
+.cr-spin-landed .cr-spin-winning{background:linear-gradient(145deg,#625943,#2e3940 73%)!important;border-color:#e9bc75!important;box-shadow:0 0 0 2px #ffe6b088,0 0 32px #ffbc6873,inset 0 0 18px #ffc47b36!important;animation:crSpinWinnerPulse .7s ease-out}
+.cr-spin-landed .cr-spin-pointer{background:#fff2d2;box-shadow:0 0 15px #ffe4ae,0 0 45px #ffcb69}
+.cr-spin-landing-label{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:950;letter-spacing:2px;color:#ffe0ae;z-index:7;background:#182632eb;padding:4px 12px;box-shadow:0 0 18px #0008;pointer-events:none}
+.cr2-reel-modal .reel-actions,.cr2-reel-modal .battle-spin-foot{padding:8px 24px 0;margin-top:14px;color:#a9b8c6}
+.cr2-reel-modal .reel-actions .secondary,.cr2-reel-modal .battle-spin-foot .secondary{background:#253644;border:1px solid #627082;padding:12px 18px;font-weight:850;color:#f7d4a5}
+.cr2-reel-modal .reel-actions .secondary:hover,.cr2-reel-modal .battle-spin-foot .secondary:hover{border-color:#e9b367;background:#394c58}
+.cr-spin-compact{height:176px}
+.cr-spin-compact .cr-spin-card{height:137px;padding:5px 7px 6px}
+.cr-spin-compact .cr-spin-item-art{height:75px;flex-basis:75px}
+.cr-spin-compact .cr-spin-card img{height:76px}
+.cr-spin-compact .cr-spin-card strong{min-height:22px;max-height:22px;font-size:9px}
+.cr-spin-compact .cr-spin-card small{font-size:10px}
+.cr-spin-compact .cr-spin-top-label{top:4px;font-size:8px;opacity:.75}
+.cr2-multi-lane{margin:7px 0 12px}
+.cr2-multi-lane .multi-reel-counter{display:flex;justify-content:space-between;align-items:center;padding:6px 16px;font-size:10px;letter-spacing:1.8px;color:#f3c080}
+.cr2-multi-lane .multi-reel-counter span{color:#91a8b9}
+.cr2-reel-modal .multi-reel-scroller{max-height:64vh;overflow-y:auto;overscroll-behavior:contain}
+.cr2-battle-lane .battle-spin-person{font-size:11px;font-weight:950;color:#efc78d;letter-spacing:1.2px;padding:5px 20px;margin:0;text-align:left;background:#1a2936}
+.cr2-reel-modal .battle-spin-pair{gap:9px;max-height:64vh;overflow-y:auto}
+@keyframes crSpinWinnerPulse{0%{filter:brightness(1.5);transform:scale(1.06)}100%{filter:brightness(1);transform:scale(1)}}
+@media(max-width:600px){.cr-spin-window{height:229px}.cr-spin-card{height:187px}.cr-spin-compact{height:164px}.cr-spin-compact .cr-spin-card{height:132px}.cr2-reel-modal h2{font-size:27px!important}.cr2-reel-modal{padding-top:22px!important}.cr2-reel-modal .reel-actions,.cr2-reel-modal .battle-spin-foot{gap:10px;padding:4px 16px}}
+@media(prefers-reduced-motion:reduce){.cr-spin-landed .cr-spin-winning{animation:none}}
