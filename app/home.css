@@ -194,3 +194,24 @@
 .landing-navigation .landing-social-link{background:none;border:0;color:#b0b5bd;font-size:10px;font-weight:900;letter-spacing:1.3px;padding:32px 0;transition:color .2s;white-space:nowrap;cursor:pointer}
 .landing-navigation .landing-social-link:hover{color:#ffbd55}
 @media(max-width:940px){.landing-navigation .landing-social-link{padding:5px 0 10px}}
+
+
+/* Landing refresh: preserve all rendered case and item image sources. */
+.landing{--ink:#090e14;--panel:#151e27;--line:#364451;--amber:#f5b754;--bright:#eef2f7;background:#0a0f15}
+.landing-header{background:#111820ef;border-bottom:1px solid #38434f;backdrop-filter:blur(18px)}
+.landing-brand{letter-spacing:-1.35px}
+.landing-navigation a{transition:color .22s}
+.landing-navigation a:hover{color:#f9c77c}
+.landing-header-cta{border-radius:2px;background:linear-gradient(135deg,#ffd18a,#e9a741);box-shadow:0 5px 25px #e5a33b22}
+.landing-hero{background:radial-gradient(ellipse at 77% 38%,#56412648,#111922 54%,#090e14 88%)}
+.landing-hero-grid{opacity:.23;background-size:68px 68px}
+.landing-hero h1{font-weight:1000;letter-spacing:-.055em;text-shadow:0 12px 45px #0006}
+.landing-hero-copy>p{color:#b8c4d3}
+.landing-hero-art{filter:drop-shadow(0 28px 35px #0007)}
+.landing-main-case img{filter:drop-shadow(0 30px 25px #000a);transition:filter .3s,transform .3s}
+.landing-main-case:hover img{transform:scale(1.045);filter:drop-shadow(0 38px 24px #000a)}
+.landing-button-primary{background:linear-gradient(135deg,#ffd08a,#eaa443);box-shadow:0 8px 35px #c6883c2a}
+.landing-button-outline{border-color:#516174;background:#25324099;backdrop-filter:blur(8px)}
+.landing-button-outline:hover{background:#304051}
+.landing a:focus-visible,.landing button:focus-visible{outline:2px solid #ffce7c;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.landing-hero-art,.landing-main-case,.landing-art-ring{animation:none!important}.landing-main-case img{transition:none}}
