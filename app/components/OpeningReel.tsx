@@ -1,80 +1,24 @@
 'use client';
-import {useEffect,useMemo,useRef} from 'react';
-
-type ReelItem={id:string;name:string;rarity:string;value:number;weight:number;imageUrl?:string|null};
-type Props={winner:ReelItem;pool:ReelItem[];reducedMotion:boolean;onFinish:()=>void};
-const rarity:Record<string,string>={COMMON:'#9ca3af',UNCOMMON:'#44a1ff',RARE:'#9b71ff',EPIC:'#f36ad4',LEGENDARY:'#fa5260',KNIFE:'#e9b147'};
-const WIN_INDEX=4;
-const START_INDEX=40;
-const WIDTH=152;
-const GAP=12;
-const DURATION=6200;
-const euro=(cents:number)=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
-
-/** Visual reel only: the server has already committed the real winning item. */
-export default function OpeningReel({winner,pool,reducedMotion,onFinish}:Props){
- const viewport=useRef<HTMLDivElement>(null);
- const track=useRef<HTMLDivElement>(null);
- const finished=useRef(false);
- const finishHandler=useRef(onFinish);
- finishHandler.current=onFinish;
- const slots=useMemo(()=>{
-  // Decorative reel items use each case's actual configured drop weights.
-  // Crucially, the ultra-rare gold item is not shown at a misleadingly high frequency.
-  const choices=pool.filter(x=>x.weight>0);
-  const total=choices.reduce((sum,item)=>sum+item.weight,0);
-  const pick=():ReelItem=>{
-   if(total<=0)return winner;
-   let roll=Math.random()*total;
-   for(const item of choices){
-    roll-=item.weight;
-    if(roll<0)return item;
-   }
-   return choices[choices.length-1];
-  };
-  return Array.from({length:46},(_,i)=>i===WIN_INDEX?winner:pick());
- },[winner,pool]);
- const finish=()=>{
-  if(finished.current)return;
-  finished.current=true;
-  finishHandler.current();
- };
- useEffect(()=>{
-  if(reducedMotion){finish();return}
-  const el=track.current,stage=viewport.current;
-  if(!el||!stage)return;
-  const align=(index:number)=>stage.getBoundingClientRect().width/2-WIDTH/2-index*(WIDTH+GAP);
-  el.style.transition='none';
-  el.style.transform='translate3d('+align(START_INDEX)+'px,0,0)';
-  let secondFrame=0;
-  const firstFrame=requestAnimationFrame(()=>{
-   secondFrame=requestAnimationFrame(()=>{
-    el.style.transition='transform '+DURATION+'ms cubic-bezier(0.08,0.70,0.15,1)';
-    el.style.transform='translate3d('+align(WIN_INDEX)+'px,0,0)';
-   });
-  });
-  const timeout=window.setTimeout(finish,DURATION+120);
-  return()=>{cancelAnimationFrame(firstFrame);cancelAnimationFrame(secondFrame);clearTimeout(timeout)};
- },[reducedMotion]);
- return <div className="overlay reel-overlay">
-  <section className="reel-modal" role="dialog" aria-label="Kistenöffnung läuft" aria-modal="true">
-   <div className="eyebrow">CASE RUSH / OPENING</div>
-   <h2>KISTE WIRD <em>GEÖFFNET</em></h2>
-   <p>Die Waffen bewegen sich nach rechts. Der Gewinn wurde bereits vor Beginn vom Server bestimmt.</p>
-   <div className="reel-viewport" ref={viewport}>
-    <div className="reel-pointer" aria-hidden="true"><span>▼</span><span>▲</span></div>
-    <div className="reel-track" ref={track} onTransitionEnd={finish}>
-     {slots.map((item,i)=><div className="reel-tile" key={i} style={{borderBottomColor:rarity[item.rarity]??'#a0a0a0'}}>
-      {item.imageUrl?<img src={item.imageUrl} alt="" draggable={false}/>:<span className="reel-no-image">✦</span>}
-      <strong title={item.name}>{item.name}</strong>
-      <span className="reel-item-value">{euro(item.value)} <small>virtuell</small></span>
-     </div>)}
-    </div>
-   </div>
+import {useRef} from 'react';
+import CaseSpinTrack,{type SpinWeapon} from './CaseSpinTrack';
+type Item=SpinWeapon&{id:string;name:string;rarity:string;weight:number};
+export default function OpeningReel({winner,pool,reducedMotion,onFinish}:{
+ winner:Item;pool:Item[];reducedMotion:boolean;onFinish:()=>void
+}){
+ const done=useRef(false);
+ const next=useRef(onFinish);
+ next.current=onFinish;
+ const finish=()=>{if(done.current)return;done.current=true;next.current()};
+ return <div className="overlay reel-overlay cr2-reel-overlay">
+  <section className="reel-modal cr2-reel-modal" role="dialog" aria-modal="true" aria-label="Kistenöffnung">
+   <div className="eyebrow">CASE RUSH / OPENING SEQUENCE</div>
+   <h2>CASE <em>OPENING.</em></h2>
+   <p>Das Roulette läuft von rechts nach links und stoppt unter der goldenen Markierung.</p>
+   <CaseSpinTrack winner={winner} pool={pool} duration={6550} reducedMotion={reducedMotion} onComplete={finish}/>
    <div className="reel-actions">
-    <span>Nur Animation · kein Einfluss auf die Gewinnchance</span>
-    <button type="button" className="secondary" onClick={finish}>ANIMATION ÜBERSPRINGEN</button>
+    <span>Der Gewinn steht vor Beginn der Animation fest.</span>
+    <button type="button" className="secondary" onClick={finish}>ANIMATION ÜBERSPRINGEN ↗</button>
    </div>
   </section>
- </div>
+ </div>;
 }
