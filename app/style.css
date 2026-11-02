@@ -734,3 +734,12 @@ header.top.game-header nav .game-nav-link.active{color:#f2b46c!important}
 @media(max-width:1120px){.cr2-case-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:670px){.cr2-case-grid{grid-template-columns:1fr!important}.game-main .cr2-case-stage{height:255px!important;min-height:255px!important}.cr2-detail-hero{grid-template-columns:1fr}.cr2-detail-art{min-height:160px}.cr2-detail-art .art-case{height:170px}.cr2-detail{padding:18px!important}}
 @media(prefers-reduced-motion:reduce){.cr2-case-halo,.cr2-case-sheen,.game-main .cr2-case-stage .art-case{transition:none!important;animation:none!important}}
+
+
+/* Persistent language selection for all site sections */
+.cr-language-switch{position:fixed;right:12px;bottom:14px;z-index:110;display:flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid #6b7680;background:#111c26ee;box-shadow:0 8px 25px #0007;backdrop-filter:blur(12px);border-radius:5px;font-family:Inter,Arial,sans-serif}
+.cr-language-switch button{font-size:11px;font-weight:950;padding:8px 10px;border:0;background:transparent;color:#97a8ba;letter-spacing:1px;cursor:pointer;border-radius:3px}
+.cr-language-switch button.active{background:#ecad52;color:#111820}
+.cr-language-switch button:hover:not(.active){color:#fff;background:#263544}
+.cr-language-switch span{color:#6c8192;font-size:10px}
+@media(max-width:600px){.cr-language-switch{right:8px;bottom:8px;padding:3px}.cr-language-switch button{padding:7px 9px}}
