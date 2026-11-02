@@ -684,3 +684,53 @@ footer{background:#0c121a}
 @media(max-width:670px){.game-main .case-grid{grid-template-columns:1fr}.game-main .item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.game-page-intro{margin:10px 12px 22px!important}.game-main{padding:25px 13px!important}}
 @media(max-width:390px){.game-main .item-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.game-main .case,.game-main .item,.primary,.secondary{transition:none!important;transform:none!important}}
+
+
+/* CR2 / COMPLETE VISUAL RESET. Specific to gameplay; existing assets and data remain untouched. */
+body:has(.game-header){background:#101920!important;color:#ecf0f2!important;background-image:radial-gradient(ellipse 65% 45% at 60% 0%,#304a52aa,transparent 78%),linear-gradient(180deg,#17252d 0%,#0d151b 43%,#111b24 100%)!important}
+header.top.game-header{background:#111d26f5!important;border-bottom:2px solid #bd8952!important;box-shadow:0 18px 40px #03070a75!important}
+header.top.game-header .game-logo{font-weight:1000;letter-spacing:-1.4px}
+header.top.game-header nav .game-nav-link.active{color:#f2b46c!important}
+.game-page-intro{background:linear-gradient(115deg,#263d48,#15232c 65%,#1e323c)!important;border:0!important;border-bottom:3px solid #d5a267!important;max-width:none!important;margin:0!important;padding:58px max(5%,calc((100% - 1340px)/2))!important}
+.game-page-intro .eyebrow{color:#e8ba83!important;letter-spacing:2px}
+.game-page-intro h1{font-size:clamp(34px,4.7vw,64px)!important;color:#fff!important;letter-spacing:-2.7px!important}
+.game-page-intro p{color:#b7c8d1!important;max-width:460px}
+.game-main{max-width:1480px!important;padding-top:45px!important}
+.game-main .section-head{border-color:#526271!important}
+.game-main .section-head em{color:#e7aa5d!important}
+.cr2-case-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:22px!important}
+.game-main .cr2-case{padding:0!important;display:flex;flex-direction:column;text-align:left;border:1px solid #596671!important;background:#1b2b35!important;box-shadow:0 14px 30px #02060966!important;border-radius:2px!important;position:relative;overflow:hidden}
+.game-main .cr2-case:before{content:none!important}
+.game-main .cr2-case:hover{border-color:#ffc273!important;box-shadow:0 25px 56px #0008,0 0 0 1px #f9c07e75!important}
+.cr2-case-top{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:#15232c;color:#acbcc7;font-size:9px;font-weight:900;letter-spacing:1.7px;border-bottom:1px solid #51616e;position:relative;z-index:3}
+.cr2-case-top span:last-child{color:#edbc83}
+.game-main .cr2-case-stage{height:300px!important;min-height:300px!important;background:linear-gradient(180deg,#344c57 0%,#20333e 70%,#1a2b35 100%)!important;isolation:isolate;border-bottom:1px solid #566572!important;display:flex;align-items:center;justify-content:center}
+.game-main .cr2-case-stage:before{content:'';inset:0;background:linear-gradient(90deg,#ffffff08 1px,transparent 1px),linear-gradient(#ffffff08 1px,transparent 1px)!important;background-size:32px 32px!important;opacity:.8}
+.cr2-case-halo{position:absolute;inset:7% 11% 5%;z-index:0;background:radial-gradient(ellipse at center,#f2b5633f 0%,#c0a17f1e 30%,transparent 67%);border-radius:50%;transform:scale(.9);transition:transform .4s,opacity .4s}
+.cr2-case:hover .cr2-case-halo{transform:scale(1.16);opacity:1}
+.game-main .cr2-case-stage .art-case{height:240px!important;width:95%!important;max-height:none!important;max-width:375px!important;position:relative;z-index:1;object-fit:contain;filter:drop-shadow(0 33px 18px #03090baf)!important;transform:rotate(-3deg);transition:transform .4s cubic-bezier(.2,.8,.2,1)!important}
+.game-main .cr2-case:hover .cr2-case-stage .art-case{transform:translateY(-10px) rotate(0) scale(1.12)!important}
+.cr2-case-id{position:absolute!important;bottom:14px!important;left:18px!important;z-index:2!important;font-size:9px!important;letter-spacing:1.4px;color:#bfcbd1!important}
+.cr2-case-sheen{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(114deg,transparent 34%,#ffffff12 49%,transparent 63%);transform:translateX(-110%);transition:transform .65s}
+.cr2-case:hover .cr2-case-sheen{transform:translateX(110%)}
+.cr2-case-details{padding:21px 21px 0;flex:1;display:flex;flex-direction:column;align-items:stretch}
+.cr2-case-type{font-size:9px;font-weight:950;letter-spacing:1.6px;color:#e2a95e}
+.game-main .cr2-case .cr2-case-details h3{margin:10px 0!important;font-size:clamp(21px,2vw,27px)!important;font-weight:950;letter-spacing:-.6px!important;line-height:1.15;min-height:48px}
+.game-main .cr2-case .cr2-case-details p{margin:0 0 16px!important;font-weight:950;font-size:18px!important;color:#f7c37d!important;min-height:28px}
+.game-main .cr2-case .case-bottom{margin:0 -21px!important;border-top:1px solid #53616e!important;background:#14212a!important;padding:16px 21px!important;color:#e9eff4!important;display:flex;align-items:center;justify-content:space-between;letter-spacing:1.1px;transition:background .25s}
+.cr2-case:hover .case-bottom{background:#ca8d3f!important;color:#101820!important}
+.cr2-case .case-bottom b{font-size:20px;font-weight:500}
+.cr2-detail{width:min(98vw,1040px)!important;padding:30px!important;background:#16232d!important;max-height:92vh}
+.cr2-detail-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:25px;align-items:center;margin:16px 0 24px;border:1px solid #445967;background:radial-gradient(ellipse at 27% 50%,#4a5e5e,#1d303b 57%,#192832);padding:20px}
+.cr2-detail-art{min-height:230px;display:grid;place-items:center}
+.cr2-detail-art .art-case{width:100%;height:220px;max-height:220px;filter:drop-shadow(0 32px 19px #0009)}
+.cr2-detail-copy span{font-size:10px;letter-spacing:2px;color:#e4b777;font-weight:950}
+.cr2-detail-copy h2{font-size:clamp(26px,3.3vw,43px)!important;letter-spacing:-1.4px;line-height:1.06;margin:15px 0}
+.cr2-detail-copy strong{color:#ffcb84;font-size:19px}
+.cr2-detail .drop{background:#1f303b;border:1px solid #435563;padding:10px;margin:6px 0;flex-wrap:wrap}
+.cr2-detail .drop:hover{border-color:#aa885b;background:#263d4b}
+.cr2-detail .drop .art-item{height:65px;width:100px}
+.cr2-detail .primary.wide{position:sticky;bottom:0;z-index:3;font-size:15px;padding:19px}
+@media(max-width:1120px){.cr2-case-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:670px){.cr2-case-grid{grid-template-columns:1fr!important}.game-main .cr2-case-stage{height:255px!important;min-height:255px!important}.cr2-detail-hero{grid-template-columns:1fr}.cr2-detail-art{min-height:160px}.cr2-detail-art .art-case{height:170px}.cr2-detail{padding:18px!important}}
+@media(prefers-reduced-motion:reduce){.cr2-case-halo,.cr2-case-sheen,.game-main .cr2-case-stage .art-case{transition:none!important;animation:none!important}}
