@@ -625,3 +625,62 @@ header.top.game-header .profile{
 .cr-admin-weapon-selection label{max-width:115px;font-size:11px}
 .cr-admin-weapon-selection input{width:90px!important;padding:8px;margin:6px 0 0}
 @media(max-width:600px){.cr-admin-weapon-modal{padding:16px}.cr-admin-weapon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* CASE RUSH 2026 / tactical editorial design system — presentation only.
+   Do not replace or modify existing case/skin assets or game rules. */
+:root{--cr-bg:#090e14;--cr-layer:#111923;--cr-raised:#1a2430;--cr-border:#303c4b;--cr-gold:#f5b64b;--cr-ice:#e8edf5;--cr-muted:#a5b3c4}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(ellipse 85vw 50vw at 90% -12%,#a16a231a,transparent 70%),#0b1017;color:var(--cr-ice);font-family:Inter,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,a,input,select{outline-offset:3px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #ffc76e}
+button:not(:disabled){transition:background .22s,border-color .22s,color .22s,transform .22s,box-shadow .22s}
+.primary{position:relative;background:linear-gradient(135deg,#ffcb75,#e5a341);color:#171a1f;border:1px solid #ffd28c;box-shadow:0 4px 18px #d78b1b22;font-weight:950;text-transform:uppercase;border-radius:3px}
+.primary:hover{background:linear-gradient(135deg,#ffdc9b,#f2b754);box-shadow:0 8px 27px #ffc26736;transform:translateY(-2px)}
+.secondary{background:#202c3a;border:1px solid #435367;border-radius:3px;color:#e9eef7}
+.secondary:hover{background:#304155;border-color:#e4b675;transform:translateY(-1px)}
+.game-main{max-width:1440px!important;padding:clamp(32px,4.5vw,72px) clamp(15px,3vw,50px)!important}
+.game-page-intro{background:linear-gradient(90deg,#19222edc,#1118217a),radial-gradient(ellipse at 89% 0%,#b9812b20,transparent 60%)!important;border:1px solid #374351!important;border-left:3px solid #dba14a!important;padding:clamp(24px,4vw,46px)!important;margin:20px auto 32px!important;max-width:1440px!important;position:relative;overflow:hidden}
+.game-page-intro:after{content:"";position:absolute;width:260px;height:260px;right:-115px;top:-125px;border:1px solid #bd935638;border-radius:50%;pointer-events:none}
+.game-page-intro h1,.game-page-intro h2{letter-spacing:-.045em!important;text-wrap:balance}
+.game-main .section-head{margin:15px 0 26px;border-bottom:1px solid #354252;padding:0 0 17px;gap:12px}
+.game-main .section-head h2{font-size:clamp(24px,3vw,39px);letter-spacing:-1.5px}
+.game-main .section-head span{color:#e8b66c;font-weight:900}
+.game-main .case-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.game-main .case{position:relative;background:linear-gradient(155deg,#202a35 0%,#141c26 75%);border:1px solid #354251;border-radius:4px;overflow:hidden;isolation:isolate;box-shadow:0 10px 30px #0002;transition:transform .28s cubic-bezier(.18,.8,.2,1),border-color .28s,box-shadow .28s}
+.game-main .case:hover{transform:translateY(-7px)!important;border-color:#e3aa57!important;box-shadow:0 22px 48px #0007,0 0 0 1px #c8944940}
+.game-main .case-visual{height:clamp(185px,18vw,250px);background:radial-gradient(ellipse at 48% 58%,#4b4b45 0%,#29313c 46%,#19212b 80%);border-bottom:1px solid #394653}
+.game-main .case-visual:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,#fff1,transparent 35%,#060a1019),repeating-linear-gradient(90deg,transparent 0 38px,#ffffff05 39px 40px)}
+.game-main .art-case{width:89%;height:83%;max-height:210px;position:relative;z-index:2;filter:drop-shadow(0 22px 16px #0009);transition:transform .3s}
+.game-main .case:hover .art-case{transform:translateY(-5px) scale(1.07) rotate(-2deg)}
+.game-main .case h3{font-size:clamp(17px,1.6vw,23px);letter-spacing:-.5px;margin-top:19px}
+.game-main .case p{color:#f7c276;font-weight:950}
+.game-main .case-bottom{border-top:1px solid #384554;color:#b8c8da;padding-top:14px}
+.game-main .item-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.game-main .item{background:linear-gradient(145deg,#1e2935,#141c25);border:1px solid #374251;border-top:3px solid gray;border-radius:3px;transition:transform .23s,border-color .23s,background .23s}
+.game-main .item:hover{transform:translateY(-4px);background:#25323f;border-color:#77899f}
+.game-main .item .art-item{filter:drop-shadow(0 14px 12px #0008);transition:transform .28s}
+.game-main .item:hover .art-item{transform:scale(1.09) rotate(-1deg)}
+.game-main .item h3{font-size:15px;line-height:1.4}
+.game-main .item p{color:#fac777}
+.game-main .item small{color:#a5b6cb}
+.battle-card,.battle-row,.battle-create,.trading-column,.trading-offer,.upgrade-card,.trading-inventory-cta,.trading-recipient,.upgrades-current{border:1px solid #374557!important;background:linear-gradient(150deg,#1d2935,#141c26)!important;box-shadow:0 12px 32px #0002;transition:border-color .25s,box-shadow .25s,transform .25s}
+.battle-card:hover,.battle-row:hover,.upgrade-card:hover,.trading-offer:hover{border-color:#c69851!important;box-shadow:0 18px 35px #0005}
+.battle-modes button,.trading-tabs button{border-radius:3px;transition:background .22s,transform .22s,border-color .22s}
+.battle-modes button:hover,.trading-tabs button:hover{transform:translateY(-2px)}
+.trade-item{border-radius:3px!important;background:linear-gradient(140deg,#25303c,#161e29)!important}
+.trade-item:hover,.trade-item.picked{border-color:#edb458!important;box-shadow:0 0 0 1px #d1a05d40}
+.trade-item img{filter:drop-shadow(0 12px 13px #0009);transition:transform .25s}
+.trade-item:hover img{transform:scale(1.09)}
+.trading-hub>h2,.upgrades h2{letter-spacing:-.04em}
+.reel-modal,.multi-reel-modal,.battle-modal,.modal{border:1px solid #5c6370;background:linear-gradient(145deg,#202a35,#121923);box-shadow:0 35px 100px #000b;border-radius:4px}
+.reel-viewport{border-block-color:#776342}
+.overlay{backdrop-filter:blur(8px)}
+.cr-promo-redemption{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:15px 0;padding:15px;background:#1d2834;border:1px solid #435267}
+.cr-promo-redemption strong{font-size:11px;letter-spacing:.7px;color:#ffc56e}
+.cr-promo-redemption input{flex:1;min-width:170px;padding:12px;background:#111a25;color:#fff;border:1px solid #455164}
+footer{background:#0c121a}
+@media(max-width:1080px){.game-main .case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.game-main .item-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:670px){.game-main .case-grid{grid-template-columns:1fr}.game-main .item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.game-page-intro{margin:10px 12px 22px!important}.game-main{padding:25px 13px!important}}
+@media(max-width:390px){.game-main .item-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.game-main .case,.game-main .item,.primary,.secondary{transition:none!important;transform:none!important}}
