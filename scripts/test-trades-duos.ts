@@ -41,10 +41,14 @@ async function main(){
  assert.equal(stacked.status,200,'Two duplicate copies merge');
  assert.equal(stacked.data.results[0].value,24);
  assert.equal(stacked.data.results[0].mergedCount,2);
- const keeper=await db.inventoryItem.findUniqueOrThrow({where:{id:copies[0].id}});
+ const keeperId=stacked.data.results[0].inventoryId as string;
+ const keeper=await db.inventoryItem.findUniqueOrThrow({where:{id:keeperId}});
  assert.equal(keeper.valueAtDrop,24);
  assert.equal(keeper.mergedCount,2);
- assert.ok((await db.inventoryItem.findUniqueOrThrow({where:{id:copies[1].id}})).soldAt);
+ assert.equal(keeper.soldAt,null);
+ const consumed=copies.find(x=>x.id!==keeperId);
+ assert.ok(consumed,'A duplicate was consumed');
+ assert.ok((await db.inventoryItem.findUniqueOrThrow({where:{id:consumed!.id}})).soldAt);
  const mergeAgain=await call(merge,'/api/merge',{action:'mergeAll'},a.cookie);
  assert.equal(mergeAgain.status,400,'Consumed copies may not be merged again');
  const extra=await create(a.id,second.id,225);
